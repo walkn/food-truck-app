@@ -23,6 +23,7 @@ export const OrdersProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [applyTaxes, setApplyTaxes] = useState(false); // Default to no taxes
 
   const [dateFilter, setDateFilter] = useState({
     startDate: null,
@@ -41,6 +42,39 @@ export const OrdersProvider = ({ children }) => {
   const TPS_RATE = 0.05; // 5% Federal tax
   const TVQ_RATE = 0.09975; // 9.975% Quebec provincial tax
 
+// In OrdersContext.js, the toggleTaxes function needs to be fixed
+
+const toggleTaxes = () => {
+  // Toggle the tax state first
+  setApplyTaxes(prev => !prev);
+  
+  // Then immediately use the NEW value (not the old state) to calculate taxes
+  setCurrentOrder(prevOrder => {
+    // We need to explicitly pass the new tax status here, since the state update above
+    // won't be reflected yet in the applyTaxes variable
+    const shouldApplyTaxes = !applyTaxes; // This is the new value after toggling
+    
+    const subtotal = prevOrder.total; // The subtotal stays the same
+    let tps = 0;
+    let tvq = 0;
+    let totalWithTax = subtotal;
+    
+    if (shouldApplyTaxes) {
+      // Calculate taxes if we're applying them
+      tps = subtotal * TPS_RATE;
+      tvq = (subtotal + tps) * TVQ_RATE;
+      totalWithTax = subtotal + tps + tvq;
+    }
+    
+    return {
+      ...prevOrder,
+      tps: parseFloat(tps.toFixed(2)),
+      tvq: parseFloat(tvq.toFixed(2)),
+      totalWithTax: parseFloat(totalWithTax.toFixed(2)),
+    };
+  });
+};
+
   // Subscribe to orders when component mounts
   useEffect(() => {
     setLoading(true);
@@ -56,31 +90,43 @@ export const OrdersProvider = ({ children }) => {
   }, []);
 
   // Calculate order summary whenever orders or date filter changes
-useEffect(() => {
-  if (!loading) {
-    const summary = calculateDailySummary(
-      orders,
-      dateFilter.startDate,
-      dateFilter.endDate
-    );
-    setOrderSummary(summary);
-  }
-}, [orders, dateFilter, loading]);
+  useEffect(() => {
+    if (!loading) {
+      const summary = calculateDailySummary(
+        orders,
+        dateFilter.startDate,
+        dateFilter.endDate
+      );
+      setOrderSummary(summary);
+    }
+  }, [orders, dateFilter, loading]);
 
   // Calculate totals with Quebec taxes (TPS & TVQ)
   const calculateTotals = (items) => {
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const tps = subtotal * TPS_RATE;
-    const tvq = (subtotal + tps) * TVQ_RATE; // TVQ applies to price + TPS
-    const totalWithTax = subtotal + tps + tvq;
-    
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  
+  // If taxes are disabled, return only subtotal
+  if (!applyTaxes) {
     return {
       total: parseFloat(subtotal.toFixed(2)),
-      tps: parseFloat(tps.toFixed(2)),
-      tvq: parseFloat(tvq.toFixed(2)),
-      totalWithTax: parseFloat(totalWithTax.toFixed(2)),
+      tps: 0,
+      tvq: 0,
+      totalWithTax: parseFloat(subtotal.toFixed(2)),
     };
+  }
+  
+  // Otherwise calculate with taxes
+  const tps = subtotal * TPS_RATE;
+  const tvq = (subtotal + tps) * TVQ_RATE; // TVQ applies to price + TPS
+  const totalWithTax = subtotal + tps + tvq;
+  
+  return {
+    total: parseFloat(subtotal.toFixed(2)),
+    tps: parseFloat(tps.toFixed(2)),
+    tvq: parseFloat(tvq.toFixed(2)),
+    totalWithTax: parseFloat(totalWithTax.toFixed(2)),
   };
+};
 
   // Add item to current order
   const addItem = (item) => {
@@ -160,12 +206,12 @@ useEffect(() => {
   };
 
   // Update date filter for order summary
-const updateDateFilter = (startDate, endDate) => {
-  setDateFilter({
-    startDate,
-    endDate
-  });
-};
+  const updateDateFilter = (startDate, endDate) => {
+    setDateFilter({
+      startDate,
+      endDate
+    });
+  };
 
   // Update customer name
   const updateCustomerName = (name) => {
@@ -184,6 +230,7 @@ const updateDateFilter = (startDate, endDate) => {
     try {
       const orderToSave = {
         ...currentOrder,
+        applyTaxes: applyTaxes, // Save the tax status with the order
         timestamp: new Date().toISOString(),
       };
 
@@ -238,6 +285,9 @@ const updateDateFilter = (startDate, endDate) => {
         originalId: orderId // Keep track of original ID for potential updates later
       };
       
+      // Set tax status based on the order
+      setApplyTaxes(!!orderToEdit.applyTaxes);
+      
       setCurrentOrder(cleanOrder);
       return true;
     }
@@ -249,7 +299,12 @@ const updateDateFilter = (startDate, endDate) => {
     setError(null);
     
     try {
-      const { success, error } = await fbUpdateOrder(orderId, updatedOrder);
+      const orderToUpdate = {
+        ...updatedOrder,
+        applyTaxes: applyTaxes, // Include current tax status
+      };
+      
+      const { success, error } = await fbUpdateOrder(orderId, orderToUpdate);
       
       if (error) {
         setError(error);
@@ -297,7 +352,7 @@ const updateDateFilter = (startDate, endDate) => {
     
     // Otherwise just load the order for editing
     const success = loadOrderForEditing(orderId);
-  return { success };  // Return an object with success property
+    return { success };  // Return an object with success property
   };
 
   const value = {
@@ -316,7 +371,9 @@ const updateDateFilter = (startDate, endDate) => {
     filterOrders,
     dateFilter,
     updateDateFilter,
-    orderSummary
+    orderSummary,
+    applyTaxes,
+    toggleTaxes
   };
 
   return (

@@ -1,8 +1,18 @@
 import React from 'react';
 import '../styles/OrderSummary.css';
+import { useOrders } from '../contexts/OrdersContext';
 
-function OrderSummary({ order, removeItem, clearOrder, completeOrder }) {
-  const { items, total, tps, tvq, totalWithTax } = order;
+function OrderSummary() {
+  const { 
+    currentOrder, 
+    removeItem, 
+    clearOrder, 
+    completeOrder,
+    applyTaxes,
+    toggleTaxes
+  } = useOrders();
+
+  const { items, total, tps, tvq, totalWithTax } = currentOrder;
 
   return (
     <div className="order-summary">
@@ -33,14 +43,29 @@ function OrderSummary({ order, removeItem, clearOrder, completeOrder }) {
               <span>Subtotal:</span>
               <span>${total.toFixed(2)}</span>
             </div>
-            <div className="total-line">
-              <span>TPS (5%):</span>
-              <span>${tps.toFixed(2)}</span>
+            {/* Add tax toggle switch */}
+            <div className="tax-toggle">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={applyTaxes} 
+                  onChange={toggleTaxes}
+                />
+                Add taxes (TPS 5% + TVQ 9.975%)
+              </label>
             </div>
-            <div className="total-line">
-              <span>TVQ (9.975%):</span>
-              <span>${tvq.toFixed(2)}</span>
-            </div>
+            {applyTaxes && (
+              <>
+                <div className="total-line">
+                  <span>TPS (5%):</span>
+                  <span>${tps.toFixed(2)}</span>
+                </div>
+                <div className="total-line">
+                  <span>TVQ (9.975%):</span>
+                  <span>${tvq.toFixed(2)}</span>
+                </div>
+              </>
+            )}
             <div className="total-line total">
               <span>Total:</span>
               <span>${totalWithTax.toFixed(2)}</span>

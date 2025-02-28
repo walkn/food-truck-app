@@ -60,12 +60,7 @@ function App() {
               customerName={currentOrder.customerName} 
               updateCustomerName={updateCustomerName} 
             />
-            <OrderSummary 
-              order={currentOrder} 
-              removeItem={removeItem} 
-              clearOrder={clearOrder} 
-              completeOrder={completeOrder} 
-            />
+            <OrderSummary />
           </div>
           <div className="menu-container">
             <MenuItems addItem={addItem} />
@@ -75,4 +70,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
