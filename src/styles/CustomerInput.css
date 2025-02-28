@@ -1,0 +1,17 @@
+.customer-input {
+  margin-bottom: 20px;
+}
+
+.customer-input label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.customer-input input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}

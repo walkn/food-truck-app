@@ -1,0 +1,45 @@
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.order-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.order-summary-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  order: 2;
+}
+
+.menu-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  order: 1;
+}
+
+/* Tablet and larger screens */
+@media (min-width: 768px) {
+  .order-container {
+    flex-direction: row;
+  }
+  
+  .order-summary-container {
+    width: 40%;
+    order: 1;
+  }
+  
+  .menu-container {
+    width: 60%;
+    order: 2;
+  }
+}
+

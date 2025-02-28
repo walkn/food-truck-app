@@ -1,0 +1,110 @@
+.order-history {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.order-history h2 {
+  margin-bottom: 16px;
+}
+
+.search-container {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.empty-history {
+  font-style: italic;
+  color: #888;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.history-item {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.history-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.customer-name {
+  font-weight: 700;
+}
+
+.order-date {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.history-items {
+  margin-bottom: 16px;
+}
+
+.history-item-detail {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.history-item-detail span:nth-child(1) {
+  width: 50%;
+}
+
+.history-item-detail span:nth-child(2) {
+  width: 20%;
+  text-align: center;
+}
+
+.history-item-detail span:nth-child(3) {
+  width: 30%;
+  text-align: right;
+}
+
+.history-totals .total-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.history-totals .total-line.total {
+  font-weight: 700;
+  border-top: 2px solid #eee;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.edit-btn {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  color: white;
+}

@@ -1,0 +1,86 @@
+.order-summary h2 {
+  margin-bottom: 16px;
+}
+
+.empty-order {
+  font-style: italic;
+  color: #888;
+}
+
+.order-items {
+  margin-bottom: 16px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.item-info {
+  display: flex;
+  justify-content: space-between;
+  width: 85%;
+}
+
+.item-info span:nth-child(1) {
+  width: 50%;
+}
+
+.item-info span:nth-child(2) {
+  width: 20%;
+  text-align: center;
+}
+
+.item-info span:nth-child(3) {
+  width: 30%;
+  text-align: right;
+}
+
+.remove-item-btn {
+  background-color: #f44336;
+  color: white;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.order-totals {
+  margin-bottom: 16px;
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.total-line.total {
+  font-weight: 700;
+  border-top: 2px solid #eee;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.clear-btn {
+  background-color: #f44336;
+  color: white;
+  flex: 1;
+}
+
+.complete-btn {
+  background-color: #4caf50;
+  color: white;
+  flex: 2;
+}
