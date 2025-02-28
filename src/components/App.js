@@ -4,30 +4,31 @@ import MenuItems from './MenuItems';
 import OrderSummary from './OrderSummary';
 import OrderHistory from './OrderHistory';
 import CustomerInput from './CustomerInput';
-import useOrders from '../hooks/useOrders';
+import { useOrders } from '../contexts/OrdersContext';
 import '../styles/App.css';
 
 function App() {
   const {
     currentOrder,
-    orderHistory,
+    orders,
+    loading,
     addItem,
     removeItem,
     clearOrder,
     updateCustomerName,
     completeOrder,
-    filterOrderHistory,
     deleteOrder,
     editOrder,
+    filterOrders,
   } = useOrders();
 
   const [showHistory, setShowHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Function to handle editing an order
+  // Handle Edit Order
   const handleEditOrder = (orderId) => {
-    // If edit is successful, switch to order view
-    if (editOrder(orderId)) {
+    const result = editOrder(orderId);
+    if (result.success) {
       setShowHistory(false);
     }
   };
@@ -41,11 +42,12 @@ function App() {
       
       {showHistory ? (
         <OrderHistory 
-          orderHistory={filterOrderHistory(searchTerm)} 
+          orderHistory={filterOrders(searchTerm)} 
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           deleteOrder={deleteOrder}
           editOrder={handleEditOrder}
+          loading={loading}
         />
       ) : (
         <div className="order-container">

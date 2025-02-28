@@ -1,12 +1,21 @@
 import React from 'react';
 import '../styles/OrderHistory.css';
 
-function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, editOrder }) {
+function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, editOrder, loading }) {
   // Format date from ISO string
   const formatDate = (isoString) => {
     const date = new Date(isoString);
     return `${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
   };
+
+  if (loading) {
+    return (
+      <div className="order-history">
+        <h2>Order History</h2>
+        <div className="loading-indicator">Loading orders...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="order-history">
@@ -57,7 +66,7 @@ function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, ed
                 </button>
               </div>
               <div className="history-items">
-                {order.items.map((item, index) => (
+                {order.items && order.items.map((item, index) => (
                   <div key={index} className="history-item-detail">
                     <span>{item.name}</span>
                     <span>x{item.quantity}</span>
@@ -68,7 +77,7 @@ function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, ed
               <div className="history-totals">
                 <div className="total-line">
                   <span>Subtotal:</span>
-                  <span>${order.total.toFixed(2)}</span>
+                  <span>${order.total?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="total-line">
                   <span>TPS (5%):</span>
@@ -80,7 +89,7 @@ function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, ed
                 </div>
                 <div className="total-line total">
                   <span>Total:</span>
-                  <span>${order.totalWithTax.toFixed(2)}</span>
+                  <span>${order.totalWithTax?.toFixed(2) || '0.00'}</span>
                 </div>
               </div>
             </div>

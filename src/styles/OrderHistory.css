@@ -107,4 +107,11 @@
 .delete-btn {
   background-color: #f44336;
   color: white;
+
+  .loading-indicator {
+    text-align: center;
+    padding: 30px;
+    font-size: 18px;
+    color: #666;
+  }
 }
