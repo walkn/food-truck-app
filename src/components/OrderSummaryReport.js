@@ -7,9 +7,27 @@ function OrderSummaryReport() {
   const { 
     orderSummary, 
     dateFilter, 
-    updateDateFilter 
+    updateDateFilter, 
+    orders // Add this to get access to the raw orders
   } = useOrders();
   
+  // Add this debugging section
+  console.log('Raw orders:', orders);
+  console.log('Date filter:', dateFilter);
+  console.log('Order summary:', orderSummary);
+  
+  // Check if there are orders but summaries are empty
+  if (orders && orders.length > 0 && orderSummary.summaryByDate.length === 0) {
+    console.log('Orders exist but summary is empty - possible format issue with:', 
+      orders.map(order => ({
+        id: order.id,
+        timestamp: order.timestamp,
+        totalWithTax: order.totalWithTax,
+        items: order.items
+      }))
+    );
+  }
+
   const [activeTab, setActiveTab] = useState('daily');
   const dateRanges = getDateRanges();
   const [customRange, setCustomRange] = useState({
@@ -72,6 +90,17 @@ function OrderSummaryReport() {
               {dateRanges[key].label}
             </button>
           ))}
+
+            <button 
+                className="force-all-orders"
+                onClick={() => {
+                  // Force a refresh with all orders
+                  updateDateFilter(null, null);
+                  console.log("Forcing display of all orders");
+                }}
+              >
+                Show All Orders
+              </button>
         </div>
         
         <div className="custom-range">
