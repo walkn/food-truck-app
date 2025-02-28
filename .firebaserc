@@ -5,7 +5,7 @@
   "targets": {
     "food-truck-729ef": {
       "hosting": {
-        "food-truck-app": [
+        "employee-preview": [
           "food-truck-729ef"
         ]
       }
