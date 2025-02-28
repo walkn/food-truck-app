@@ -192,4 +192,23 @@
       padding: 8px;
       font-size: 0.9rem;
     }
+
+    .force-all-orders, .show-all-btn {
+      background-color: #4caf50;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .empty-data {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .empty-data .show-all-btn {
+      padding: 10px 15px;
+      font-size: 0.9rem;
+    }
+    
   }

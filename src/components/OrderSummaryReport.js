@@ -164,37 +164,45 @@ function OrderSummaryReport() {
       
       {/* Daily Breakdown Tab */}
       {activeTab === 'daily' && (
-        <div className="daily-breakdown">
-          <h3>Daily Breakdown</h3>
-          
-          {orderSummary.summaryByDate.length === 0 ? (
-            <p className="empty-data">No orders found for selected date range</p>
-          ) : (
-            <table className="summary-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Orders</th>
-                  <th>Items Sold</th>
-                  <th>Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderSummary.summaryByDate.map(day => (
-                  <tr key={day.date}>
-                    <td>{day.date}</td>
-                    <td>{day.orderCount}</td>
-                    <td>
-                      {day.itemsSold.reduce((sum, item) => sum + item.quantity, 0)}
-                    </td>
-                    <td>{formatCurrency(day.totalAmount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+  <div className="daily-breakdown">
+    <h3>Daily Breakdown</h3>
+    
+    {orderSummary.summaryByDate.length === 0 ? (
+      <div className="empty-data">
+        <p>No orders found for selected date range</p>
+        <button 
+          onClick={() => updateDateFilter(null, null)}
+          className="show-all-btn"
+        >
+          Show All Orders
+        </button>
+      </div>
+    ) : (
+      <table className="summary-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Orders</th>
+            <th>Items Sold</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orderSummary.summaryByDate.map((day, index) => (
+            <tr key={index}>
+              <td>{day.date}</td>
+              <td>{day.orderCount}</td>
+              <td>
+                {day.itemsSold.reduce((sum, item) => sum + item.quantity, 0)}
+              </td>
+              <td>{formatCurrency(day.totalAmount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+)}
       
       {/* Items Sold Tab */}
       {activeTab === 'items' && (
