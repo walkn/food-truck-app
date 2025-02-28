@@ -7,6 +7,7 @@ import CustomerInput from './CustomerInput';
 import { useOrders } from '../contexts/OrdersContext';
 import '../styles/App.css';
 import OrderSummaryReport from './OrderSummaryReport';
+import PreviewBanner from './PreviewBanner';
 
 function App() {
   const {
@@ -36,6 +37,7 @@ function App() {
 
   return (
     <div className="app">
+      {process.env.REACT_APP_ENVIRONMENT === 'preview' && <PreviewBanner />}
       <Header 
         showHistory={showHistory} 
         setShowHistory={setShowHistory} 
