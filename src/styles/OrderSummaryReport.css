@@ -1,0 +1,195 @@
+.order-summary-report {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .order-summary-report h2 {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+  }
+  
+  .order-summary-report h3 {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+  }
+  
+  /* Date Filter */
+  .date-filter {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .date-range-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .date-range-buttons button {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    transition: background-color 0.2s;
+  }
+  
+  .date-range-buttons button.active {
+    background-color: #4a90e2;
+    color: white;
+    border-color: #2a70c2;
+  }
+  
+  .custom-range {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+  }
+  
+  .date-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 10px;
+  }
+  
+  .date-input-group {
+    flex: 1;
+    min-width: 180px;
+  }
+  
+  .date-input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  
+  .date-input-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .custom-range button {
+    background-color: #4a90e2;
+    color: white;
+    padding: 8px 12px;
+  }
+  
+  /* Summary Tabs */
+  .summary-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .summary-tabs button {
+    background-color: transparent;
+    color: #555;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  
+  .summary-tabs button.active {
+    color: #4a90e2;
+    border-bottom: 3px solid #4a90e2;
+  }
+  
+  /* Overall Summary Cards */
+  .overall-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+  
+  .summary-card {
+    flex: 1;
+    min-width: 180px;
+    background-color: #f5f7fa;
+    border-radius: 6px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .summary-card h3 {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+  }
+  
+  /* Summary Tables */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  
+  .summary-table th,
+  .summary-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .summary-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+  }
+  
+  .summary-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .empty-data {
+    padding: 20px;
+    text-align: center;
+    font-style: italic;
+    color: #888;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .date-inputs {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .overall-summary {
+      flex-direction: column;
+    }
+    
+    .summary-card {
+      min-width: 100%;
+    }
+    
+    .summary-tabs button {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+    }
+    
+    .summary-table th,
+    .summary-table td {
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+  }

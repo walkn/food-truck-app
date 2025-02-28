@@ -5,6 +5,7 @@ import {
   deleteOrder as fbDeleteOrder, 
   subscribeToOrders
 } from '../firebase/firestore';
+import { calculateDailySummary, getDateRanges } from '../utils/orderSummaryUtils';
 
 const OrdersContext = createContext();
 
@@ -23,6 +24,19 @@ export const OrdersProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [dateFilter, setDateFilter] = useState({
+    startDate: null,
+    endDate: null
+  });
+  const [orderSummary, setOrderSummary] = useState({
+    summaryByDate: [],
+    overallSummary: {
+      totalAmount: 0,
+      orderCount: 0,
+      itemsSold: []
+    }
+  });
+
   // Quebec tax rates
   const TPS_RATE = 0.05; // 5% Federal tax
   const TVQ_RATE = 0.09975; // 9.975% Quebec provincial tax
@@ -40,6 +54,18 @@ export const OrdersProvider = ({ children }) => {
       unsubscribe();
     };
   }, []);
+
+  // Calculate order summary whenever orders or date filter changes
+useEffect(() => {
+  if (!loading) {
+    const summary = calculateDailySummary(
+      orders,
+      dateFilter.startDate,
+      dateFilter.endDate
+    );
+    setOrderSummary(summary);
+  }
+}, [orders, dateFilter, loading]);
 
   // Calculate totals with Quebec taxes (TPS & TVQ)
   const calculateTotals = (items) => {
@@ -132,6 +158,14 @@ export const OrdersProvider = ({ children }) => {
       totalWithTax: 0,
     });
   };
+
+  // Update date filter for order summary
+const updateDateFilter = (startDate, endDate) => {
+  setDateFilter({
+    startDate,
+    endDate
+  });
+};
 
   // Update customer name
   const updateCustomerName = (name) => {
@@ -278,7 +312,10 @@ export const OrdersProvider = ({ children }) => {
     deleteOrder: deleteOrderFromFirestore,
     editOrder,
     loadOrderForEditing,
-    filterOrders
+    filterOrders,
+    dateFilter,
+    updateDateFilter,
+    orderSummary
   };
 
   return (

@@ -6,6 +6,7 @@ import OrderHistory from './OrderHistory';
 import CustomerInput from './CustomerInput';
 import { useOrders } from '../contexts/OrdersContext';
 import '../styles/App.css';
+import OrderSummaryReport from './OrderSummaryReport';
 
 function App() {
   const {
@@ -41,14 +42,17 @@ function App() {
       />
       
       {showHistory ? (
-        <OrderHistory 
-          orderHistory={filterOrders(searchTerm)} 
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          deleteOrder={deleteOrder}
-          editOrder={handleEditOrder}
-          loading={loading}
-        />
+        <>
+          <OrderSummaryReport />
+          <OrderHistory 
+            orderHistory={filterOrders(searchTerm)} 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            deleteOrder={deleteOrder}
+            editOrder={handleEditOrder}
+            loading={loading}
+          />
+        </>
       ) : (
         <div className="order-container">
           <div className="order-summary-container">
@@ -71,5 +75,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
