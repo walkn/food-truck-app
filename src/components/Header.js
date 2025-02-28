@@ -4,7 +4,7 @@ import '../styles/Header.css';
 function Header({ showHistory, setShowHistory }) {
   return (
     <header className="header">
-      <h1>Food Truck Order System</h1>
+      <h1>TimBit Order System</h1>
       <button 
         className="history-toggle-btn"
         onClick={() => setShowHistory(!showHistory)}
