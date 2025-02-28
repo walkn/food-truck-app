@@ -296,7 +296,8 @@ const updateDateFilter = (startDate, endDate) => {
     }
     
     // Otherwise just load the order for editing
-    return { success: loadOrderForEditing(orderId) };
+    const success = loadOrderForEditing(orderId);
+  return { success };  // Return an object with success property
   };
 
   const value = {

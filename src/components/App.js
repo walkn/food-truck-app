@@ -27,8 +27,8 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Handle Edit Order
-  const handleEditOrder = (orderId) => {
-    const result = editOrder(orderId);
+  const handleEditOrder = async (orderId) => {
+    const result = await editOrder(orderId);
     if (result.success) {
       setShowHistory(false);
     }
