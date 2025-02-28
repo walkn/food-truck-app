@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "food-truck-729ef"
+  },
+  "targets": {
+    "food-truck-729ef": {
+      "hosting": {
+        "food-truck-app": [
+          "food-truck-729ef"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
