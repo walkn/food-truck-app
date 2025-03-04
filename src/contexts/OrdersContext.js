@@ -222,18 +222,37 @@ const toggleTaxes = () => {
   };
 
   // Complete current order and add to Firestore
-  const completeOrder = async () => {
-    if (currentOrder.items.length === 0) return { success: false, error: 'No items in order' };
+  // Replace the existing completeOrder function in src/contexts/OrdersContext.js with this one
+const completeOrder = async () => {
+  if (currentOrder.items.length === 0) return { success: false, error: 'No items in order' };
 
-    setError(null);
-    
-    try {
-      const orderToSave = {
-        ...currentOrder,
-        applyTaxes: applyTaxes, // Save the tax status with the order
-        timestamp: new Date().toISOString(),
-      };
+  setError(null);
+  
+  try {
+    const orderToSave = {
+      ...currentOrder,
+      applyTaxes: applyTaxes,
+      timestamp: new Date().toISOString(),
+    };
 
+    // Check if we are editing an existing order (originalId would be present)
+    if (currentOrder.originalId) {
+      // Remove the originalId before saving to Firestore
+      const orderId = currentOrder.originalId;
+      delete orderToSave.originalId;
+      
+      // Update the existing order
+      const { success, error } = await fbUpdateOrder(orderId, orderToSave);
+      
+      if (error) {
+        setError(error);
+        return { success: false, error };
+      }
+      
+      clearOrder();
+      return { success: true, id: orderId };
+    } else {
+      // This is a new order, so add it to Firestore
       const { id, error } = await fbAddOrder(orderToSave);
       
       if (error) {
@@ -243,12 +262,13 @@ const toggleTaxes = () => {
       
       clearOrder();
       return { success: true, id };
-    } catch (err) {
-      const errorMsg = err.message || 'Failed to complete order';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
     }
-  };
+  } catch (err) {
+    const errorMsg = err.message || 'Failed to complete order';
+    setError(errorMsg);
+    return { success: false, error: errorMsg };
+  }
+};
 
   // Delete an order from Firestore
   const deleteOrderFromFirestore = async (orderId) => {
