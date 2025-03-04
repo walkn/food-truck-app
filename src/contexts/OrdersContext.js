@@ -233,6 +233,12 @@ const completeOrder = async () => {
       ...currentOrder,
       applyTaxes: applyTaxes,
       timestamp: new Date().toISOString(),
+      // Initialize each item with a delivered status of false
+  items: currentOrder.items.map(item => ({
+    ...item,
+    delivered: false
+  })),
+  completed: false
     };
 
     // Check if we are editing an existing order (originalId would be present)
@@ -375,6 +381,54 @@ const completeOrder = async () => {
     return { success };  // Return an object with success property
   };
 
+  // Allow the user to check when an item has been delivered
+const updateItemDeliveryStatus = async (orderId, itemIndex, isDelivered) => {
+  setError(null);
+  
+  try {
+    // Find the order to update
+    const orderToUpdate = orders.find(order => order.id === orderId);
+    
+    if (!orderToUpdate) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    // Create a copy of the items array
+    const updatedItems = [...orderToUpdate.items];
+    
+    // Update the delivery status of the specific item
+    updatedItems[itemIndex] = {
+      ...updatedItems[itemIndex],
+      delivered: isDelivered
+    };
+    
+    // Check if all items are delivered
+    const allItemsDelivered = updatedItems.every(item => item.delivered === true);
+    
+    // Update the order with the new items array and completed status
+    const updatedOrder = {
+      ...orderToUpdate,
+      items: updatedItems,
+      completed: allItemsDelivered,
+      completedAt: allItemsDelivered ? new Date().toISOString() : null
+    };
+    
+    // Update in Firestore
+    const result = await fbUpdateOrder(orderId, updatedOrder);
+    
+    if (result.error) {
+      setError(result.error);
+      return { success: false, error: result.error };
+    }
+    
+    return { success: true };
+  } catch (err) {
+    const errorMsg = err.message || 'Failed to update delivery status';
+    setError(errorMsg);
+    return { success: false, error: errorMsg };
+  }
+};
+
   const value = {
     orders,
     currentOrder,
@@ -393,7 +447,8 @@ const completeOrder = async () => {
     updateDateFilter,
     orderSummary,
     applyTaxes,
-    toggleTaxes
+    toggleTaxes,
+    updateItemDeliveryStatus
   };
 
   return (

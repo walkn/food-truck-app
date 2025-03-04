@@ -36,6 +36,12 @@
   border: 1px solid #eee;
   border-radius: 8px;
   padding: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.history-item.completed-order {
+  background-color: #f1f9f1;
+  border-left: 3px solid #4caf50;
 }
 
 .history-header {
@@ -70,19 +76,37 @@
   display: flex;
   justify-content: space-between;
   padding: 4px 0;
+  align-items: center;
 }
 
-.history-item-detail span:nth-child(1) {
+.item-delivery-status {
+  display: flex;
+  align-items: center;
   width: 50%;
 }
 
+.item-delivery-status input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.item-delivery-status label {
+  cursor: pointer;
+  transition: text-decoration 0.2s, color 0.2s;
+}
+
+.item-delivery-status label.delivered {
+  text-decoration: line-through;
+  color: #888;
+}
+
 .history-item-detail span:nth-child(2) {
-  width: 20%;
+  width: 15%;
   text-align: center;
 }
 
 .history-item-detail span:nth-child(3) {
-  width: 30%;
+  width: 25%;
   text-align: right;
 }
 
@@ -107,11 +131,45 @@
 .delete-btn {
   background-color: #f44336;
   color: white;
+}
 
-  .loading-indicator {
-    text-align: center;
-    padding: 30px;
-    font-size: 18px;
-    color: #666;
-  }
+.loading-indicator {
+  text-align: center;
+  padding: 30px;
+  font-size: 18px;
+  color: #666;
+}
+
+.order-completion-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.status-pending {
+  background-color: #ffefd5;
+  color: #ff8c00;
+}
+
+.status-completed {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.delivery-progress {
+  margin-top: 8px;
+  height: 4px;
+  width: 100%;
+  background-color: #eee;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.delivery-progress-bar {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.3s ease;
 }

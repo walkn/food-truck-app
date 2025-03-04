@@ -1,11 +1,28 @@
 import React from 'react';
 import '../styles/OrderHistory.css';
+import { useOrders } from '../contexts/OrdersContext';
 
 function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, editOrder, loading }) {
+  // Get access to the updateItemDeliveryStatus function
+  const { updateItemDeliveryStatus } = useOrders();
+  
   // Format date from ISO string
   const formatDate = (isoString) => {
     const date = new Date(isoString);
     return `${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+  };
+
+  // Handle checkbox changes
+  const handleDeliveryStatusChange = async (orderId, itemIndex, isDelivered) => {
+    await updateItemDeliveryStatus(orderId, itemIndex, isDelivered);
+  };
+
+  // Calculate delivery progress for an order
+  const calculateDeliveryProgress = (items) => {
+    if (!items || items.length === 0) return 0;
+    
+    const deliveredItems = items.filter(item => item.delivered).length;
+    return (deliveredItems / items.length) * 100;
   };
 
   if (loading) {
@@ -35,11 +52,16 @@ function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, ed
       ) : (
         <div className="history-list">
           {orderHistory.map((order) => (
-            <div key={order.id} className="history-item">
+            <div key={order.id} className={`history-item ${order.completed ? 'completed-order' : ''}`}>
               <div className="history-header">
-                <span className="customer-name">
-                  {order.customerName || 'Anonymous Customer'}
-                </span>
+                <div>
+                  <span className="customer-name">
+                    {order.customerName || 'Anonymous Customer'}
+                  </span>
+                  <span className={`order-completion-status ${order.completed ? 'status-completed' : 'status-pending'}`}>
+                    {order.completed ? 'Completed' : 'Pending'}
+                  </span>
+                </div>
                 <span className="order-date">{formatDate(order.timestamp)}</span>
               </div>
               <div className="history-actions">
@@ -65,10 +87,32 @@ function OrderHistory({ orderHistory, searchTerm, setSearchTerm, deleteOrder, ed
                   Delete
                 </button>
               </div>
+              
+              {/* Delivery progress bar */}
+              <div className="delivery-progress">
+                <div 
+                  className="delivery-progress-bar" 
+                  style={{ width: `${calculateDeliveryProgress(order.items)}%` }}
+                ></div>
+              </div>
+              
               <div className="history-items">
                 {order.items && order.items.map((item, index) => (
                   <div key={index} className="history-item-detail">
-                    <span>{item.name}</span>
+                    <div className="item-delivery-status">
+                      <input
+                        type="checkbox"
+                        checked={item.delivered || false}
+                        onChange={(e) => handleDeliveryStatusChange(order.id, index, e.target.checked)}
+                        id={`item-${order.id}-${index}`}
+                      />
+                      <label 
+                        htmlFor={`item-${order.id}-${index}`} 
+                        className={item.delivered ? 'delivered' : ''}
+                      >
+                        {item.name}
+                      </label>
+                    </div>
                     <span>x{item.quantity}</span>
                     <span>${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
