@@ -210,5 +210,37 @@
       padding: 10px 15px;
       font-size: 0.9rem;
     }
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    
+    .summary-header h2 {
+      margin-bottom: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    
+    .toggle-expand-btn {
+      background-color: #4a90e2;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+    }
+    
+    .toggle-expand-btn:hover {
+      background-color: #357ab8;
+    }
+    
+    .order-summary-report.collapsed {
+      padding-bottom: 0;
+    }
     
   }
