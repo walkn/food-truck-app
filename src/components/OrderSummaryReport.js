@@ -12,7 +12,7 @@ function OrderSummaryReport() {
   } = useOrders();
   
   // Add state for expandable functionality
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   // Toggle function for the expand/collapse functionality
   const toggleExpanded = () => {
