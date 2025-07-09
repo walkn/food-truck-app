@@ -7,9 +7,9 @@ import { getAnalytics } from "firebase/analytics";
 // Replace these placeholder values with your actual Firebase project config
 const firebaseConfig = {
     apiKey: "AIzaSyAxH0UPEux0IBgwGXHlpcDQua2FxftrtGo",
-    authDomain: "food-truck-729ef.firebaseapp.com",
-    projectId: "food-truck-729ef",
-    storageBucket: "food-truck-729ef.firebasestorage.app",
+    authDomain: "food-truck-vietnam-729ef.firebaseapp.com",
+    projectId: "food-truck-vietnam-729ef",
+    storageBucket: "food-truck-vietnam-729ef.firebasestorage.app",
     messagingSenderId: "462408351370",
     appId: "1:462408351370:web:0250420ebac4ae6cc9b773",
     measurementId: "G-SWNXQCHHRQ"

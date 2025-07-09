@@ -1,33 +1,21 @@
 const menuItems = [
     {
       id: 1,
-      name: 'Sugar Cane',
-      price: 5.99,
-      image: '/images/sugar-cane.jpg',
+      name: 'Nuoc Mia',
+      price: 10,
+      image: '/images/nuoc-mia.jpg',
     },
     {
       id: 2,
-      name: 'Eggrolls',
-      price: 4.99,
-      image: '/images/eggrolls.jpg',
+      name: 'Che Jelly Bowl',
+      price: 9,
+      image: '/images/che-jelly-bowl.jpg',
     },
     {
       id: 3,
-      name: 'Brochette',
-      price: 6.99,
-      image: '/images/brochette.jpg',
-    },
-    {
-      id: 4,
-      name: 'Fried Rice',
-      price: 7.99,
-      image: '/images/fried-rice.jpg',
-    },
-    {
-      id: 5,
-      name: 'Nem',
-      price: 5.49,
-      image: '/images/nem.jpg',
+      name: 'Fruit Cup',
+      price: 10,
+      image: '/images/fruit-cup.jpg',
     },
   ];
   

@@ -1,12 +1,12 @@
 {
   "projects": {
-    "default": "food-truck-729ef"
+    "default": "food-truck-vietnam-729ef"
   },
   "targets": {
-    "food-truck-729ef": {
+    "food-truck-vietnam-729ef": {
       "hosting": {
         "employee-preview": [
-          "food-truck-729ef"
+          "food-truck-vietnam-729ef"
         ]
       }
     }

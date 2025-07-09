@@ -1,0 +1,50 @@
+[debug] [2025-07-09T14:13:05.016Z] ----------------------------------------------------------------------
+[debug] [2025-07-09T14:13:05.018Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /nix/store/fprgfkwna33crhc86jqbf5878piivvgw-firebase-tools-14.7.0/lib/node_modules/firebase-tools/lib/bin/firebase.js init hosting
+[debug] [2025-07-09T14:13:05.018Z] CLI Version:   14.7.0
+[debug] [2025-07-09T14:13:05.018Z] Platform:      linux
+[debug] [2025-07-09T14:13:05.018Z] Node Version:  v20.19.0
+[debug] [2025-07-09T14:13:05.018Z] Time:          Wed Jul 09 2025 14:13:05 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-07-09T14:13:05.018Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-07-09T14:13:05.191Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-07-09T14:13:05.191Z] > authorizing via signed-in user (franck.belot@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/food-truck-app
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2025-07-09T14:13:05.194Z] Using project from CLI flag: food-truck-729ef
+[debug] [2025-07-09T14:13:05.195Z] Checked if tokens are valid: false, expires at: 1752034684080
+[debug] [2025-07-09T14:13:05.195Z] Checked if tokens are valid: false, expires at: 1752034684080
+[debug] [2025-07-09T14:13:05.195Z] > refreshing access token with scopes: []
+[debug] [2025-07-09T14:13:05.196Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-07-09T14:13:05.196Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-07-09T14:13:05.291Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-07-09T14:13:05.291Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-07-09T14:13:05.299Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/food-truck-729ef [none]
+[debug] [2025-07-09T14:13:05.529Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/food-truck-729ef 403
+[debug] [2025-07-09T14:13:05.529Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/food-truck-729ef {"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}
+[debug] [2025-07-09T14:13:05.530Z] Request to https://firebase.googleapis.com/v1beta1/projects/food-truck-729ef had HTTP Error: 403, The caller does not have permission
+[debug] [2025-07-09T14:13:05.531Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/food-truck-729ef had HTTP Error: 403, The caller does not have permission
+    at responseToError (/nix/store/fprgfkwna33crhc86jqbf5878piivvgw-firebase-tools-14.7.0/lib/node_modules/firebase-tools/lib/responseToError.js:52:12)
+    at RetryOperation._fn (/nix/store/fprgfkwna33crhc86jqbf5878piivvgw-firebase-tools-14.7.0/lib/node_modules/firebase-tools/lib/apiv2.js:312:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to get Firebase project food-truck-729ef. Please make sure the project exists and your account has permission to access it.

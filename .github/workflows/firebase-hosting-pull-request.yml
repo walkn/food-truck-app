@@ -17,5 +17,5 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FOOD_TRUCK_729EF }}
-          projectId: food-truck-729ef
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FOOD_TRUCK_VIETNAM_729EF }}
+          projectId: food-truck-vietnam-729ef
