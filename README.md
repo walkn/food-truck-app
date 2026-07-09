@@ -1,70 +1,114 @@
-# Getting Started with Create React App
+# TimBit Food Truck Order System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based point-of-sale and order-tracking app for the TimBit food truck. Orders are stored in Firebase Firestore and synchronized in real time across open browsers.
 
-## Available Scripts
+## Open the app
 
-In the project directory, you can run:
+The app is publicly available at:
 
-### `npm start`
+**https://food-truck-729ef.web.app**
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Open that URL in a current desktop or mobile browser. No installation or account is currently required.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+> **Access warning:** the app does not currently enforce sign-in or role-based access. Anyone who can open the site may be able to view, create, edit, complete, or delete shared orders, depending on the deployed Firestore security rules. Add authentication and restrictive Firestore rules before using it with private or production data.
 
-### `npm test`
+## How the app works
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Create an order
 
-### `npm run build`
+1. Enter the customer's name.
+2. Select menu item cards to add them to the current order. Selecting the same item again increases its quantity.
+3. Use the minus button beside an item to reduce its quantity or remove it.
+4. Optionally enable Quebec taxes:
+   - TPS: 5%
+   - TVQ: 9.975%
+5. Select **Complete Order** to save the order to Firestore, or **Clear Order** to discard the current order.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Manage orders
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Select **Order History** in the header to:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- see orders update in real time;
+- search by customer or menu item;
+- edit an existing order;
+- delete an order;
+- mark individual items as delivered; and
+- see delivery progress and whether the whole order is pending or completed.
 
-### `npm run eject`
+### View sales reports
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The expandable **Sales Summary** in Order History shows:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- total revenue;
+- total order count;
+- total items sold;
+- daily sales breakdowns; and
+- item-level sales totals.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Reports can be filtered by today, yesterday, the last 7 days, the last 30 days, all time, or a custom date range.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Data flow
 
-## Learn More
+The browser loads the React app from Firebase Hosting. The app subscribes to the `orders` collection in Cloud Firestore, so a saved or updated order is reflected in every connected browser. A generated device ID is stored in the browser's `localStorage` and attached to Firestore writes for basic device tracking.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The menu and prices are defined in `src/data/menuItems.js`. Firebase project settings are defined in `src/firebase/config.js`.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Run locally
 
-### Code Splitting
+### Requirements
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- Node.js and npm
+- Network access to the configured Firebase project
 
-### Analyzing the Bundle Size
+### Setup
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+git clone https://github.com/walkn/food-truck-app.git
+cd food-truck-app
+npm install
+npm start
+```
 
-### Making a Progressive Web App
+Open http://localhost:3000. The development server reloads after source changes.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Other commands:
 
-### Advanced Configuration
+```bash
+npm test
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+`npm run build` creates an optimized production build in `build/`.
 
-### Deployment
+## Make the app available to any user
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The current Firebase Hosting deployment already gives users a public HTTPS URL:
 
-### `npm run build` fails to minify
+**https://food-truck-729ef.web.app**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+After making code changes, a Firebase project administrator can publish a new version:
+
+```bash
+npm install
+npm run build
+npx firebase-tools login
+npx firebase-tools deploy --only hosting
+```
+
+The repository is configured to deploy the `build/` directory to the Firebase project `food-truck-729ef`. Firebase access is required to deploy; ordinary users only need the public URL.
+
+For a production rollout:
+
+1. Add Firebase Authentication.
+2. Restrict Firestore rules to authorized employees.
+3. Create separate development and production Firebase projects.
+4. Move environment-specific Firebase settings into environment variables.
+5. Optionally connect a custom domain in Firebase Hosting.
+
+## Technology
+
+- React 18
+- Create React App / `react-scripts`
+- Firebase Hosting
+- Cloud Firestore
+- Firebase Authentication SDK (installed, but authentication is not yet implemented)
