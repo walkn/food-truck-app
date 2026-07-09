@@ -1,66 +1,43 @@
-# TimBit Food Truck Order System
+# TimBit Order System
 
-A React-based point-of-sale and order-tracking app for the TimBit food truck. Orders are stored in Firebase Firestore and synchronized in real time across open browsers.
+A responsive food-truck point-of-sale and order-tracking app built with React and Firebase. Orders, menu availability, and status changes synchronize across connected browsers.
 
 ## Open the app
 
-The app is publicly available at:
+The current production site is:
 
 **https://food-truck-729ef.web.app**
 
-Open that URL in a current desktop or mobile browser. No installation or account is currently required.
+No account is required. This is intentional for the current small-team setup, but it means anyone who discovers the URL can access the shared data. The site asks search engines not to index it; that is not a substitute for authentication.
 
-> **Access warning:** the app does not currently enforce sign-in or role-based access. Anyone who can open the site may be able to view, create, edit, complete, or delete shared orders, depending on the deployed Firestore security rules. Add authentication and restrictive Firestore rules before using it with private or production data.
+## Main workflow
 
-## How the app works
+1. Select menu items to build an order.
+2. Optionally enter a customer name and notes.
+3. Select cash, card, or mobile payment.
+4. Optionally apply Québec TPS (5%) and TVQ (9.975%).
+5. Select **Save Order**. Firestore assigns the next order number.
+6. Use **Order History** to move orders through New, Preparing, Ready, Delivered, or Cancelled.
 
-### Create an order
+Additional capabilities include:
 
-1. Enter the customer's name.
-2. Select menu item cards to add them to the current order. Selecting the same item again increases its quantity.
-3. Use the minus button beside an item to reduce its quantity or remove it.
-4. Optionally enable Quebec taxes:
-   - TPS: 5%
-   - TVQ: 9.975%
-5. Select **Complete Order** to save the order to Firestore, or **Clear Order** to discard the current order.
-
-### Manage orders
-
-Select **Order History** in the header to:
-
-- see orders update in real time;
-- search by customer or menu item;
-- edit an existing order;
-- delete an order;
-- mark individual items as delivered; and
-- see delivery progress and whether the whole order is pending or completed.
-
-### View sales reports
-
-The expandable **Sales Summary** in Order History shows:
-
-- total revenue;
-- total order count;
-- total items sold;
-- daily sales breakdowns; and
-- item-level sales totals.
-
-Reports can be filtered by today, yesterday, the last 7 days, the last 30 days, all time, or a custom date range.
-
-## Data flow
-
-The browser loads the React app from Firebase Hosting. The app subscribes to the `orders` collection in Cloud Firestore, so a saved or updated order is reflected in every connected browser. A generated device ID is stored in the browser's `localStorage` and attached to Firestore writes for basic device tracking.
-
-The menu and prices are defined in `src/data/menuItems.js`. Firebase project settings are defined in `src/firebase/config.js`.
+- menu price and sold-out controls;
+- unfinished-order recovery after refresh;
+- per-item delivery tracking;
+- soft deletion and restoration;
+- printable receipts;
+- CSV sales export;
+- date-filtered reports;
+- offline draft preservation; and
+- automatic customer-name anonymization after 30 days when the production app is used.
 
 ## Run locally
 
-### Requirements
+Requirements:
 
-- Node.js and npm
-- Network access to the configured Firebase project
-
-### Setup
+- Node.js 20 or newer
+- npm
+- access to the configured Firebase project
 
 ```bash
 git clone https://github.com/walkn/food-truck-app.git
@@ -69,46 +46,81 @@ npm install
 npm start
 ```
 
-Open http://localhost:3000. The development server reloads after source changes.
+Open http://localhost:3000.
 
-Other commands:
+Run validation with:
 
 ```bash
-npm test
+npm test -- --watchAll=false
 npm run build
 ```
 
-`npm run build` creates an optimized production build in `build/`.
+## Firebase configuration
 
-## Make the app available to any user
+The public Firebase web configuration is in `src/firebase/config.js`. Firebase API keys identify the project; Firestore rules and App Check provide the security controls.
 
-The current Firebase Hosting deployment already gives users a public HTTPS URL:
+### App Check
 
-**https://food-truck-729ef.web.app**
+1. In Firebase Console, enable App Check for the web app.
+2. Register a reCAPTCHA v3 site key for the production domain.
+3. Create a GitHub Actions repository variable named `FIREBASE_APP_CHECK_SITE_KEY`.
+4. For a local production build, set:
 
-After making code changes, a Firebase project administrator can publish a new version:
+```bash
+REACT_APP_FIREBASE_APP_CHECK_SITE_KEY=your_public_site_key npm run build
+```
+
+5. After verifying valid traffic, enforce App Check for Cloud Firestore in Firebase Console.
+
+App Check reduces automated abuse. It does not make this public, no-login application employee-only.
+
+### Firestore rules
+
+`firestore.rules`:
+
+- blocks hard deletion;
+- validates permitted fields, types, lengths, statuses, prices, quantities, and totals;
+- permits only append-only audit events;
+- constrains the sequential order counter; and
+- rejects access to undeclared collections.
+
+Rules intentionally retain public read/write access for the supported collections because the app has no sign-in.
+
+Test rules with the Firebase Emulator Suite before tightening or extending the schema.
+
+## Deployment
+
+Pushes to `main` run tests, build the app, deploy Firestore rules, and publish Firebase Hosting. Pull requests receive Hosting preview deployments.
+
+GitHub must contain:
+
+- secret `FIREBASE_SERVICE_ACCOUNT_FOOD_TRUCK_729EF`
+- variable `FIREBASE_APP_CHECK_SITE_KEY`
+
+Manual deployment:
 
 ```bash
 npm install
+npm test -- --watchAll=false
 npm run build
 npx firebase-tools login
-npx firebase-tools deploy --only hosting
+npx firebase-tools deploy --only firestore:rules,hosting
 ```
 
-The repository is configured to deploy the `build/` directory to the Firebase project `food-truck-729ef`. Firebase access is required to deploy; ordinary users only need the public URL.
+Firebase Hosting adds CSP, clickjacking protection, MIME sniffing protection, a restrictive permissions policy, and immutable caching for static assets.
 
-For a production rollout:
+## Data model
 
-1. Add Firebase Authentication.
-2. Restrict Firestore rules to authorized employees.
-3. Create separate development and production Firebase projects.
-4. Move environment-specific Firebase settings into environment variables.
-5. Optionally connect a custom domain in Firebase Hosting.
+- `orders`: active and soft-deleted orders
+- `orderEvents`: append-only change history
+- `menu`: shared price and availability overrides
+- `counters/orders`: sequential order-number counter
+
+A generated device identifier is stored in `localStorage` and attached to writes for basic troubleshooting. It is not an identity or authentication mechanism.
 
 ## Technology
 
-- React 18
-- Create React App / `react-scripts`
+- React 18 / Create React App
 - Firebase Hosting
-- Cloud Firestore
-- Firebase Authentication SDK (installed, but authentication is not yet implemented)
+- Cloud Firestore with persistent browser cache
+- Firebase App Check with reCAPTCHA v3

@@ -1,0 +1,165 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function optionalString(data, key, maxLength) {
+      return !data.keys().hasAny([key]) ||
+        (data[key] is string && data[key].size() <= maxLength);
+    }
+
+    function optionalNullableString(data, key, maxLength) {
+      return !data.keys().hasAny([key]) ||
+        data[key] == null ||
+        (data[key] is string && data[key].size() <= maxLength);
+    }
+
+    function optionalNullableTimestamp(data, key) {
+      return !data.keys().hasAny([key]) ||
+        data[key] == null ||
+        data[key] is timestamp;
+    }
+
+    function validStatus(data) {
+      return !data.keys().hasAny(['status']) ||
+        data.status in ['new', 'preparing', 'ready', 'delivered', 'cancelled'];
+    }
+
+    function validPayment(data) {
+      return !data.keys().hasAny(['paymentMethod']) ||
+        data.paymentMethod in ['cash', 'card', 'mobile'];
+    }
+
+    function validItem(item) {
+      return item is map &&
+        item.keys().hasOnly([
+          'id', 'name', 'price', 'quantity', 'image', 'delivered'
+        ]) &&
+        item.id is int &&
+        item.id > 0 &&
+        item.name is string &&
+        item.name.size() > 0 &&
+        item.name.size() <= 80 &&
+        item.price is number &&
+        item.price >= 0 &&
+        item.price <= 1000 &&
+        item.quantity is int &&
+        item.quantity >= 1 &&
+        item.quantity <= 99 &&
+        item.image is string &&
+        item.image.size() <= 200 &&
+        item.delivered is bool;
+    }
+
+    function validItems(items) {
+      return items is list &&
+        items.size() > 0 &&
+        items.size() <= 5 &&
+        validItem(items[0]) &&
+        (items.size() < 2 || validItem(items[1])) &&
+        (items.size() < 3 || validItem(items[2])) &&
+        (items.size() < 4 || validItem(items[3])) &&
+        (items.size() < 5 || validItem(items[4]));
+    }
+
+    function validMoney(value) {
+      return value is number && value >= 0 && value <= 100000;
+    }
+
+    function validOrder(data) {
+      return data.keys().hasOnly([
+          'orderNumber', 'customerName', 'notes', 'paymentMethod', 'status',
+          'items', 'applyTaxes', 'completed', 'total', 'tps', 'tvq',
+          'totalWithTax', 'deviceId', 'createdAt', 'updatedAt', 'deletedAt',
+          'deletedBy', 'completedAt', 'anonymizedAt', 'timestamp'
+        ]) &&
+        data.keys().hasAll([
+          'customerName', 'items', 'total', 'tps', 'tvq', 'totalWithTax',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.customerName is string &&
+        data.customerName.size() <= 80 &&
+        optionalString(data, 'notes', 240) &&
+        validStatus(data) &&
+        validPayment(data) &&
+        validItems(data.items) &&
+        (!data.keys().hasAny(['applyTaxes']) || data.applyTaxes is bool) &&
+        (!data.keys().hasAny(['completed']) || data.completed is bool) &&
+        (!data.keys().hasAny(['orderNumber']) ||
+          (data.orderNumber is int && data.orderNumber > 0)) &&
+        validMoney(data.total) &&
+        validMoney(data.tps) &&
+        validMoney(data.tvq) &&
+        validMoney(data.totalWithTax) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        optionalNullableTimestamp(data, 'deletedAt') &&
+        optionalNullableTimestamp(data, 'anonymizedAt') &&
+        optionalNullableString(data, 'deletedBy', 100) &&
+        optionalNullableString(data, 'completedAt', 40) &&
+        optionalString(data, 'deviceId', 100) &&
+        optionalString(data, 'timestamp', 60);
+    }
+
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create, update: if validOrder(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /orderEvents/{eventId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly([
+          'orderId', 'type', 'details', 'deviceId', 'createdAt'
+        ]) &&
+        request.resource.data.orderId is string &&
+        request.resource.data.orderId.size() <= 100 &&
+        request.resource.data.type is string &&
+        request.resource.data.type.size() <= 40 &&
+        request.resource.data.details is map &&
+        request.resource.data.deviceId is string &&
+        request.resource.data.deviceId.size() <= 100 &&
+        request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    match /menu/{itemId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly([
+          'name', 'description', 'image', 'price', 'soldOut',
+          'updatedAt', 'deviceId'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 80 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 160 &&
+        request.resource.data.image is string &&
+        request.resource.data.image.size() <= 200 &&
+        request.resource.data.price is number &&
+        request.resource.data.price >= 0 &&
+        request.resource.data.price <= 1000 &&
+        request.resource.data.soldOut is bool &&
+        request.resource.data.updatedAt is timestamp &&
+        request.resource.data.deviceId is string &&
+        request.resource.data.deviceId.size() <= 100;
+      allow delete: if false;
+    }
+
+    match /counters/orders {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['value', 'updatedAt']) &&
+        request.resource.data.value is int &&
+        request.resource.data.value >= 1001 &&
+        request.resource.data.updatedAt is timestamp;
+      allow update: if request.resource.data.keys().hasOnly(['value', 'updatedAt']) &&
+        request.resource.data.value is int &&
+        request.resource.data.value == resource.data.value + 1 &&
+        request.resource.data.updatedAt is timestamp;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

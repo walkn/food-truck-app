@@ -1,266 +1,217 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useOrders } from '../contexts/OrdersContext';
+import { downloadOrdersCsv } from '../utils/exportUtils';
 import { formatCurrency, getDateRanges } from '../utils/orderSummaryUtils';
 import '../styles/OrderSummaryReport.css';
 
 function OrderSummaryReport() {
-  const { 
-    orderSummary, 
-    dateFilter, 
-    updateDateFilter, 
-    orders // Add this to get access to the raw orders
+  const {
+    orderSummary,
+    dateFilter,
+    updateDateFilter,
+    orders,
   } = useOrders();
-  
-  // Add state for expandable functionality
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Toggle function for the expand/collapse functionality
-  const toggleExpanded = () => {
-    setIsExpanded(prev => !prev);
-  };
-  
-  // Add this debugging section
-  console.log('Raw orders:', orders);
-  console.log('Date filter:', dateFilter);
-  console.log('Order summary:', orderSummary);
-  
-  // Check if there are orders but summaries are empty
-  if (orders && orders.length > 0 && orderSummary.summaryByDate.length === 0) {
-    console.log('Orders exist but summary is empty - possible format issue with:', 
-      orders.map(order => ({
-        id: order.id,
-        timestamp: order.timestamp,
-        totalWithTax: order.totalWithTax,
-        items: order.items
-      }))
-    );
-  }
-
   const [activeTab, setActiveTab] = useState('daily');
-  const dateRanges = getDateRanges();
-  const [customRange, setCustomRange] = useState({
-    start: '',
-    end: ''
-  });
-  
-  // Handle date range selection
-  const handleDateRangeSelect = (range) => {
-    if (range === 'custom') {
-      updateDateFilter(customRange.start, customRange.end);
-    } else {
-      const selectedRange = dateRanges[range];
-      updateDateFilter(selectedRange.start, selectedRange.end);
-      
-      // Update custom range inputs to match
-      setCustomRange({
-        start: selectedRange.start || '',
-        end: selectedRange.end || ''
-      });
-    }
-  };
-  
-  // Handle custom date input change
-  const handleCustomDateChange = (e) => {
-    const { name, value } = e.target;
-    setCustomRange(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  // Apply custom date range
-  const applyCustomRange = () => {
-    updateDateFilter(customRange.start, customRange.end);
-  };
-  
-  // Format percentage
-  const formatPercent = (value, total) => {
-    if (!total) return '0%';
-    return `${((value / total) * 100).toFixed(1)}%`;
+  const [customRange, setCustomRange] = useState({ start: '', end: '' });
+  const dateRanges = useMemo(getDateRanges, []);
+  const totalItems = orderSummary.overallSummary.itemsSold.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  const handleDateRangeSelect = (key) => {
+    const range = dateRanges[key];
+    updateDateFilter(range.start, range.end);
+    setCustomRange({
+      start: range.start || '',
+      end: range.end || '',
+    });
   };
 
   return (
-    <div className="order-summary-report">
+    <section className="order-summary-report" aria-labelledby="summary-title">
       <div className="summary-header">
-        <h2>Sales Summary</h2>
-        <button 
-          className="toggle-expand-btn"
-          onClick={toggleExpanded}
-        >
-          {isExpanded ? 'Collapse' : 'Expand'}
-        </button>
+        <div>
+          <p className="section-label">Performance</p>
+          <h2 id="summary-title">Sales Summary</h2>
+        </div>
+        <div className="summary-header__actions">
+          <button
+            className="button button--secondary"
+            onClick={() => downloadOrdersCsv(orders)}
+            disabled={orders.length === 0}
+          >
+            Export CSV
+          </button>
+          <button
+            className="button button--quiet"
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            aria-expanded={isExpanded}
+            aria-controls="report-details"
+          >
+            {isExpanded ? 'Hide details' : 'View details'}
+          </button>
+        </div>
       </div>
-      
-      {isExpanded && (
-        <>
-          {/* Date Range Filter */}
-          <div className="date-filter">
-            <h3>Date Range</h3>
-            <div className="date-range-buttons">
-              {Object.keys(dateRanges).map(key => (
-                <button 
-                  key={key}
-                  className={!dateFilter.startDate && !dateFilter.endDate && key === 'allTime' ? 'active' : 
-                           (dateFilter.startDate === dateRanges[key].start && 
-                            dateFilter.endDate === dateRanges[key].end) ? 'active' : ''}
-                  onClick={() => handleDateRangeSelect(key)}
-                >
-                  {dateRanges[key].label}
-                </button>
-              ))}
 
-                <button 
-                    className="force-all-orders"
-                    onClick={() => {
-                      // Force a refresh with all orders
-                      updateDateFilter(null, null);
-                      console.log("Forcing display of all orders");
-                    }}
+      <div className="overall-summary">
+        <div>
+          <span>Revenue</span>
+          <strong>
+            {formatCurrency(orderSummary.overallSummary.totalAmount)}
+          </strong>
+        </div>
+        <div>
+          <span>Orders</span>
+          <strong>{orderSummary.overallSummary.orderCount}</strong>
+        </div>
+        <div>
+          <span>Items sold</span>
+          <strong>{totalItems}</strong>
+        </div>
+      </div>
+
+      {isExpanded ? (
+        <div id="report-details">
+          <div className="date-filter">
+            <div className="date-range-buttons" aria-label="Report date range">
+              {Object.entries(dateRanges).map(([key, range]) => {
+                const active =
+                  dateFilter.startDate === range.start &&
+                  dateFilter.endDate === range.end;
+                return (
+                  <button
+                    key={key}
+                    className={active ? 'active' : ''}
+                    aria-pressed={active}
+                    onClick={() => handleDateRangeSelect(key)}
                   >
-                    Show All Orders
+                    {range.label}
                   </button>
+                );
+              })}
             </div>
-            
+
             <div className="custom-range">
-              <div className="date-inputs">
-                <div className="date-input-group">
-                  <label>Start Date:</label>
-                  <input 
-                    type="date" 
-                    name="start"
-                    value={customRange.start} 
-                    onChange={handleCustomDateChange}
-                  />
-                </div>
-                <div className="date-input-group">
-                  <label>End Date:</label>
-                  <input 
-                    type="date" 
-                    name="end"
-                    value={customRange.end} 
-                    onChange={handleCustomDateChange}
-                  />
-                </div>
-              </div>
-              <button onClick={applyCustomRange}>Apply Custom Range</button>
+              <label>
+                <span>Start date</span>
+                <input
+                  type="date"
+                  value={customRange.start}
+                  onChange={(event) =>
+                    setCustomRange((range) => ({
+                      ...range,
+                      start: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span>End date</span>
+                <input
+                  type="date"
+                  value={customRange.end}
+                  onChange={(event) =>
+                    setCustomRange((range) => ({
+                      ...range,
+                      end: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <button
+                className="button button--secondary"
+                onClick={() =>
+                  updateDateFilter(customRange.start, customRange.end)
+                }
+                disabled={!customRange.start || !customRange.end}
+              >
+                Apply dates
+              </button>
             </div>
           </div>
-          
-          {/* Summary Tabs */}
-          <div className="summary-tabs">
-            <button 
-              className={activeTab === 'daily' ? 'active' : ''}
+
+          <div className="summary-tabs" role="tablist" aria-label="Report view">
+            <button
+              role="tab"
+              aria-selected={activeTab === 'daily'}
               onClick={() => setActiveTab('daily')}
             >
-              Daily Breakdown
+              Daily breakdown
             </button>
-            <button 
-              className={activeTab === 'items' ? 'active' : ''}
+            <button
+              role="tab"
+              aria-selected={activeTab === 'items'}
               onClick={() => setActiveTab('items')}
             >
-              Items Sold
+              Items sold
             </button>
           </div>
-          
-          {/* Overall Summary */}
-          <div className="overall-summary">
-            <div className="summary-card">
-              <h3>Total Revenue</h3>
-              <p className="summary-value">{formatCurrency(orderSummary.overallSummary.totalAmount)}</p>
-            </div>
-            <div className="summary-card">
-              <h3>Total Orders</h3>
-              <p className="summary-value">{orderSummary.overallSummary.orderCount}</p>
-            </div>
-            <div className="summary-card">
-              <h3>Total Items Sold</h3>
-              <p className="summary-value">
-                {orderSummary.overallSummary.itemsSold.reduce((sum, item) => sum + item.quantity, 0)}
-              </p>
-            </div>
+
+          <div className="table-scroll" role="region" aria-label="Sales report" tabIndex="0">
+            {activeTab === 'daily' ? (
+              <table className="summary-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Orders</th>
+                    <th>Items</th>
+                    <th>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderSummary.summaryByDate.map((day) => (
+                    <tr key={day.isoDate || day.date}>
+                      <td>{day.date}</td>
+                      <td>{day.orderCount}</td>
+                      <td>
+                        {day.itemsSold.reduce(
+                          (sum, item) => sum + item.quantity,
+                          0
+                        )}
+                      </td>
+                      <td>{formatCurrency(day.totalAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <table className="summary-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Share</th>
+                    <th>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderSummary.overallSummary.itemsSold.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.name}</td>
+                      <td>{item.quantity}</td>
+                      <td>
+                        {totalItems
+                          ? `${((item.quantity / totalItems) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </td>
+                      <td>{formatCurrency(item.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-          
-          {/* Daily Breakdown Tab */}
-          {activeTab === 'daily' && (
-            <div className="daily-breakdown">
-              <h3>Daily Breakdown</h3>
-              
-              {orderSummary.summaryByDate.length === 0 ? (
-                <div className="empty-data">
-                  <p>No orders found for selected date range</p>
-                  <button 
-                    onClick={() => updateDateFilter(null, null)}
-                    className="show-all-btn"
-                  >
-                    Show All Orders
-                  </button>
-                </div>
-              ) : (
-                <table className="summary-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Orders</th>
-                      <th>Items Sold</th>
-                      <th>Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderSummary.summaryByDate.map((day, index) => (
-                      <tr key={index}>
-                        <td>{day.date}</td>
-                        <td>{day.orderCount}</td>
-                        <td>
-                          {day.itemsSold.reduce((sum, item) => sum + item.quantity, 0)}
-                        </td>
-                        <td>{formatCurrency(day.totalAmount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-          
-          {/* Items Sold Tab */}
-          {activeTab === 'items' && (
-            <div className="items-sold">
-              <h3>Items Sold</h3>
-              
-              {orderSummary.overallSummary.itemsSold.length === 0 ? (
-                <p className="empty-data">No items sold for selected date range</p>
-              ) : (
-                <table className="summary-table">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th>Quantity</th>
-                      <th>% of Sales</th>
-                      <th>Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderSummary.overallSummary.itemsSold.map(item => (
-                      <tr key={item.id}>
-                        <td>{item.name}</td>
-                        <td>{item.quantity}</td>
-                        <td>
-                          {formatPercent(
-                            item.quantity, 
-                            orderSummary.overallSummary.itemsSold.reduce((sum, i) => sum + i.quantity, 0)
-                          )}
-                        </td>
-                        <td>{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+
+          {orderSummary.summaryByDate.length === 0 ? (
+            <p className="empty-data">
+              No completed sales were found in this date range.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   );
 }
 

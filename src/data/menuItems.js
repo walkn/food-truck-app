@@ -1,34 +1,36 @@
 const menuItems = [
-    {
-      id: 1,
-      name: 'Sugar Cane',
-      price: 5.99,
-      image: '/images/sugar-cane.jpg',
-    },
-    {
-      id: 2,
-      name: 'Eggrolls',
-      price: 4.99,
-      image: '/images/eggrolls.jpg',
-    },
-    {
-      id: 3,
-      name: 'Brochette',
-      price: 6.99,
-      image: '/images/brochette.jpg',
-    },
-    {
-      id: 4,
-      name: 'Fried Rice',
-      price: 7.99,
-      image: '/images/fried-rice.jpg',
-    },
-    {
-      id: 5,
-      name: 'Nem',
-      price: 5.49,
-      image: '/images/nem.jpg',
-    },
-  ];
-  
-  export default menuItems;
+  {
+    id: 1,
+    name: 'Slush Coco et canne',
+    price: 10,
+    image: '/images/slush-coco-canne.png',
+    description: 'Boisson glacée à la noix de coco et à la canne.',
+    soldOut: false,
+  },
+  {
+    id: 2,
+    name: 'Nuoc Mia',
+    price: 9,
+    image: '/images/jus-canne-sucre.png',
+    description: 'Jus frais pressé de canne à sucre.',
+    soldOut: false,
+  },
+  {
+    id: 3,
+    name: 'Banh mi',
+    price: 15,
+    image: '/images/banh-mi-nem-nuong.png',
+    description: 'Sandwich vietnamien garni de nem nướng.',
+    soldOut: false,
+  },
+  {
+    id: 4,
+    name: 'Nem Nuong',
+    price: 9,
+    image: '/images/nem-nuong.png',
+    description: 'Brochettes de porc grillé vietnamiennes.',
+    soldOut: false,
+  },
+];
+
+export default menuItems;

@@ -1,455 +1,476 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  addOrder as fbAddOrder, 
-  updateOrder as fbUpdateOrder, 
-  deleteOrder as fbDeleteOrder, 
-  subscribeToOrders
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  addOrder as fbAddOrder,
+  anonymizeExpiredCustomers,
+  restoreOrder as fbRestoreOrder,
+  saveMenuItem as fbSaveMenuItem,
+  softDeleteOrder as fbSoftDeleteOrder,
+  subscribeToMenu,
+  subscribeToOrders,
+  updateOrder as fbUpdateOrder,
 } from '../firebase/firestore';
-import { calculateDailySummary, getDateRanges } from '../utils/orderSummaryUtils';
+import defaultMenuItems from '../data/menuItems';
+import { calculateDailySummary } from '../utils/orderSummaryUtils';
+import {
+  calculateTotals,
+  normalizeOrder,
+} from '../utils/orderCalculations';
 
-const OrdersContext = createContext();
-
-export const useOrders = () => useContext(OrdersContext);
-
-export const OrdersProvider = ({ children }) => {
-  const [orders, setOrders] = useState([]);
-  const [currentOrder, setCurrentOrder] = useState({
-    items: [],
-    customerName: '',
-    total: 0,
-    tps: 0,
-    tvq: 0,
-    totalWithTax: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [applyTaxes, setApplyTaxes] = useState(false); // Default to no taxes
-
-  const [dateFilter, setDateFilter] = useState({
-    startDate: null,
-    endDate: null
-  });
-  const [orderSummary, setOrderSummary] = useState({
-    summaryByDate: [],
-    overallSummary: {
-      totalAmount: 0,
-      orderCount: 0,
-      itemsSold: []
-    }
-  });
-
-  // Quebec tax rates
-  const TPS_RATE = 0.05; // 5% Federal tax
-  const TVQ_RATE = 0.09975; // 9.975% Quebec provincial tax
-
-// In OrdersContext.js, the toggleTaxes function needs to be fixed
-
-const toggleTaxes = () => {
-  // Toggle the tax state first
-  setApplyTaxes(prev => !prev);
-  
-  // Then immediately use the NEW value (not the old state) to calculate taxes
-  setCurrentOrder(prevOrder => {
-    // We need to explicitly pass the new tax status here, since the state update above
-    // won't be reflected yet in the applyTaxes variable
-    const shouldApplyTaxes = !applyTaxes; // This is the new value after toggling
-    
-    const subtotal = prevOrder.total; // The subtotal stays the same
-    let tps = 0;
-    let tvq = 0;
-    let totalWithTax = subtotal;
-    
-    if (shouldApplyTaxes) {
-      // Calculate taxes if we're applying them
-      tps = subtotal * TPS_RATE;
-      tvq = (subtotal + tps) * TVQ_RATE;
-      totalWithTax = subtotal + tps + tvq;
-    }
-    
-    return {
-      ...prevOrder,
-      tps: parseFloat(tps.toFixed(2)),
-      tvq: parseFloat(tvq.toFixed(2)),
-      totalWithTax: parseFloat(totalWithTax.toFixed(2)),
-    };
-  });
+const OrdersContext = createContext(null);
+const DRAFT_KEY = 'timbit-order-draft-v2';
+const EMPTY_ORDER = {
+  items: [],
+  customerName: '',
+  notes: '',
+  paymentMethod: 'cash',
+  total: 0,
+  tps: 0,
+  tvq: 0,
+  totalWithTax: 0,
 };
 
-  // Subscribe to orders when component mounts
+const readDraft = () => {
+  try {
+    const saved = localStorage.getItem(DRAFT_KEY);
+    return saved ? { ...EMPTY_ORDER, ...JSON.parse(saved) } : EMPTY_ORDER;
+  } catch {
+    return EMPTY_ORDER;
+  }
+};
+
+export const useOrders = () => {
+  const context = useContext(OrdersContext);
+  if (!context) {
+    throw new Error('useOrders must be used inside OrdersProvider');
+  }
+  return context;
+};
+
+export const OrdersProvider = ({ children }) => {
+  const [allOrders, setAllOrders] = useState([]);
+  const [currentOrder, setCurrentOrder] = useState(readDraft);
+  const [menuItems, setMenuItems] = useState(defaultMenuItems);
+  const [loading, setLoading] = useState(true);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [applyTaxes, setApplyTaxes] = useState(
+    () => Boolean(readDraft().applyTaxes)
+  );
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [usingCachedData, setUsingCachedData] = useState(false);
+  const [dateFilter, setDateFilter] = useState({
+    startDate: null,
+    endDate: null,
+  });
+
+  const orders = useMemo(
+    () => allOrders.filter((order) => !order.deletedAt),
+    [allOrders]
+  );
+  const deletedOrders = useMemo(
+    () => allOrders.filter((order) => Boolean(order.deletedAt)),
+    [allOrders]
+  );
+
+  const reportableOrders = useMemo(
+    () => orders.filter((order) => order.status !== 'cancelled'),
+    [orders]
+  );
+  const orderSummary = useMemo(
+    () =>
+      calculateDailySummary(
+        reportableOrders,
+        dateFilter.startDate,
+        dateFilter.endDate
+      ),
+    [reportableOrders, dateFilter]
+  );
+
   useEffect(() => {
-    setLoading(true);
-    
-    const unsubscribe = subscribeToOrders((newOrders) => {
-      setOrders(newOrders);
-      setLoading(false);
-    });
-    
+    const handleOnline = () => {
+      setIsOnline(true);
+      setNotice('Connection restored. Changes can be saved again.');
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setNotice('You are offline. Your current order is saved on this device.');
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     return () => {
-      unsubscribe();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // Calculate order summary whenever orders or date filter changes
   useEffect(() => {
-    if (!loading) {
-      const summary = calculateDailySummary(
-        orders,
-        dateFilter.startDate,
-        dateFilter.endDate
-      );
-      setOrderSummary(summary);
-    }
-  }, [orders, dateFilter, loading]);
-
-  // Calculate totals with Quebec taxes (TPS & TVQ)
-  const calculateTotals = (items) => {
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  
-  // If taxes are disabled, return only subtotal
-  if (!applyTaxes) {
-    return {
-      total: parseFloat(subtotal.toFixed(2)),
-      tps: 0,
-      tvq: 0,
-      totalWithTax: parseFloat(subtotal.toFixed(2)),
-    };
-  }
-  
-  // Otherwise calculate with taxes
-  const tps = subtotal * TPS_RATE;
-  const tvq = (subtotal + tps) * TVQ_RATE; // TVQ applies to price + TPS
-  const totalWithTax = subtotal + tps + tvq;
-  
-  return {
-    total: parseFloat(subtotal.toFixed(2)),
-    tps: parseFloat(tps.toFixed(2)),
-    tvq: parseFloat(tvq.toFixed(2)),
-    totalWithTax: parseFloat(totalWithTax.toFixed(2)),
-  };
-};
-
-  // Add item to current order
-  const addItem = (item) => {
-    setCurrentOrder(prevOrder => {
-      const existingItemIndex = prevOrder.items.findIndex(i => i.id === item.id);
-      let updatedItems;
-
-      if (existingItemIndex > -1) {
-        // If item already exists in order, increment quantity
-        updatedItems = [...prevOrder.items];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + 1
-        };
-      } else {
-        // Add new item with quantity 1
-        updatedItems = [...prevOrder.items, { ...item, quantity: 1 }];
-      }
-
-      const { total, tps, tvq, totalWithTax } = calculateTotals(updatedItems);
-
-      return {
-        ...prevOrder,
-        items: updatedItems,
-        total,
-        tps,
-        tvq,
-        totalWithTax,
-      };
-    });
-  };
-
-  // Remove item from current order
-  const removeItem = (itemId) => {
-    setCurrentOrder(prevOrder => {
-      const existingItemIndex = prevOrder.items.findIndex(i => i.id === itemId);
-      
-      if (existingItemIndex === -1) return prevOrder;
-
-      let updatedItems;
-      
-      if (prevOrder.items[existingItemIndex].quantity > 1) {
-        // Decrement quantity if more than 1
-        updatedItems = [...prevOrder.items];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity - 1
-        };
-      } else {
-        // Remove item completely if quantity is 1
-        updatedItems = prevOrder.items.filter(i => i.id !== itemId);
-      }
-
-      const { total, tps, tvq, totalWithTax } = calculateTotals(updatedItems);
-
-      return {
-        ...prevOrder,
-        items: updatedItems,
-        total,
-        tps,
-        tvq,
-        totalWithTax,
-      };
-    });
-  };
-
-  // Clear all items from current order
-  const clearOrder = () => {
-    setCurrentOrder({
-      items: [],
-      customerName: '',
-      total: 0,
-      tps: 0,
-      tvq: 0,
-      totalWithTax: 0,
-    });
-  };
-
-  // Update date filter for order summary
-  const updateDateFilter = (startDate, endDate) => {
-    setDateFilter({
-      startDate,
-      endDate
-    });
-  };
-
-  // Update customer name
-  const updateCustomerName = (name) => {
-    setCurrentOrder(prevOrder => ({
-      ...prevOrder,
-      customerName: name,
-    }));
-  };
-
-  // Complete current order and add to Firestore
-  // Replace the existing completeOrder function in src/contexts/OrdersContext.js with this one
-const completeOrder = async () => {
-  if (currentOrder.items.length === 0) return { success: false, error: 'No items in order' };
-
-  setError(null);
-  
-  try {
-    const orderToSave = {
-      ...currentOrder,
-      applyTaxes: applyTaxes,
-      timestamp: new Date().toISOString(),
-      // Initialize each item with a delivered status of false
-  items: currentOrder.items.map(item => ({
-    ...item,
-    delivered: false
-  })),
-  completed: false
-    };
-
-    // Check if we are editing an existing order (originalId would be present)
-    if (currentOrder.originalId) {
-      // Remove the originalId before saving to Firestore
-      const orderId = currentOrder.originalId;
-      delete orderToSave.originalId;
-      
-      // Update the existing order
-      const { success, error } = await fbUpdateOrder(orderId, orderToSave);
-      
-      if (error) {
-        setError(error);
-        return { success: false, error };
-      }
-      
-      clearOrder();
-      return { success: true, id: orderId };
-    } else {
-      // This is a new order, so add it to Firestore
-      const { id, error } = await fbAddOrder(orderToSave);
-      
-      if (error) {
-        setError(error);
-        return { success: false, error };
-      }
-      
-      clearOrder();
-      return { success: true, id };
-    }
-  } catch (err) {
-    const errorMsg = err.message || 'Failed to complete order';
-    setError(errorMsg);
-    return { success: false, error: errorMsg };
-  }
-};
-
-  // Delete an order from Firestore
-  const deleteOrderFromFirestore = async (orderId) => {
-    setError(null);
-    
-    try {
-      const { success, error } = await fbDeleteOrder(orderId);
-      
-      if (error) {
-        setError(error);
-        return { success: false, error };
-      }
-      
-      return { success: true };
-    } catch (err) {
-      const errorMsg = err.message || 'Failed to delete order';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-  };
-
-  // Load an order for editing
-  const loadOrderForEditing = (orderId) => {
-    const orderToEdit = orders.find(order => order.id === orderId);
-    if (orderToEdit) {
-      // Create a clean version of the order for editing
-      const cleanOrder = {
-        items: orderToEdit.items || [],
-        customerName: orderToEdit.customerName || '',
-        total: orderToEdit.total || 0,
-        tps: orderToEdit.tps || 0,
-        tvq: orderToEdit.tvq || 0,
-        totalWithTax: orderToEdit.totalWithTax || 0,
-        originalId: orderId // Keep track of original ID for potential updates later
-      };
-      
-      // Set tax status based on the order
-      setApplyTaxes(!!orderToEdit.applyTaxes);
-      
-      setCurrentOrder(cleanOrder);
-      return true;
-    }
-    return false;
-  };
-
-  // Update an existing order
-  const updateExistingOrder = async (orderId, updatedOrder) => {
-    setError(null);
-    
-    try {
-      const orderToUpdate = {
-        ...updatedOrder,
-        applyTaxes: applyTaxes, // Include current tax status
-      };
-      
-      const { success, error } = await fbUpdateOrder(orderId, orderToUpdate);
-      
-      if (error) {
-        setError(error);
-        return { success: false, error };
-      }
-      
-      return { success: true };
-    } catch (err) {
-      const errorMsg = err.message || 'Failed to update order';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-  };
-
-  // Filter orders based on search term
-  const filterOrders = (filterTerm) => {
-    if (!filterTerm) return orders;
-
-    const lowerFilterTerm = filterTerm.toLowerCase();
-    
-    return orders.filter(order => 
-      order.customerName?.toLowerCase().includes(lowerFilterTerm) ||
-      order.items?.some(item => item.name?.toLowerCase().includes(lowerFilterTerm))
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ ...currentOrder, applyTaxes })
     );
-  };
+  }, [currentOrder, applyTaxes]);
 
-  // Edit order handler that combines load and update
-  const editOrder = async (orderId) => {
-    // If order has an originalId, it means we're updating an existing order
-    if (currentOrder.originalId) {
-      const orderToUpdate = {
-        ...currentOrder,
-        updatedAt: new Date().toISOString(),
-      };
-      
-      // Remove the originalId before saving
-      delete orderToUpdate.originalId;
-      
-      const result = await updateExistingOrder(orderId, orderToUpdate);
-      if (result.success) {
-        clearOrder();
+  useEffect(() => {
+    const unsubscribeOrders = subscribeToOrders(
+      (newOrders, fromCache) => {
+        setAllOrders(newOrders);
+        setUsingCachedData(fromCache);
+        setLoading(false);
+        setError(null);
+      },
+      (subscriptionError) => {
+        setError(`Orders could not be loaded: ${subscriptionError.message}`);
+        setLoading(false);
       }
+    );
+    const unsubscribeMenu = subscribeToMenu(
+      (remoteItems) => {
+        const overrides = new Map(
+          remoteItems.map((item) => [Number(item.id), item])
+        );
+        setMenuItems(
+          defaultMenuItems.map((item) => ({
+            ...item,
+            ...(overrides.get(item.id) || {}),
+          }))
+        );
+        setMenuLoading(false);
+      },
+      (menuError) => {
+        setError(`Menu updates could not be loaded: ${menuError.message}`);
+        setMenuLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeMenu();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      !loading &&
+      orders.length > 0
+    ) {
+      anonymizeExpiredCustomers();
+    }
+  }, [loading, orders.length]);
+
+  const recalculateOrder = useCallback(
+    (order, items = order.items, taxes = applyTaxes) => ({
+      ...order,
+      items,
+      ...calculateTotals(items, taxes),
+    }),
+    [applyTaxes]
+  );
+
+  const addItem = useCallback(
+    (item) => {
+      if (item.soldOut) return;
+      setCurrentOrder((previous) => {
+        const match = previous.items.find(
+          (currentItem) => currentItem.id === item.id
+        );
+        const items = match
+          ? previous.items.map((currentItem) =>
+              currentItem.id === item.id
+                ? { ...currentItem, quantity: currentItem.quantity + 1 }
+                : currentItem
+            )
+          : [
+              ...previous.items,
+              { ...item, quantity: 1, delivered: false },
+            ];
+        return recalculateOrder(previous, items);
+      });
+    },
+    [recalculateOrder]
+  );
+
+  const removeItem = useCallback(
+    (itemId) => {
+      setCurrentOrder((previous) => {
+        const item = previous.items.find(
+          (currentItem) => currentItem.id === itemId
+        );
+        if (!item) return previous;
+        const items =
+          item.quantity > 1
+            ? previous.items.map((currentItem) =>
+                currentItem.id === itemId
+                  ? { ...currentItem, quantity: currentItem.quantity - 1 }
+                  : currentItem
+              )
+            : previous.items.filter(
+                (currentItem) => currentItem.id !== itemId
+              );
+        return recalculateOrder(previous, items);
+      });
+    },
+    [recalculateOrder]
+  );
+
+  const clearOrder = useCallback(() => {
+    setCurrentOrder(EMPTY_ORDER);
+    setApplyTaxes(false);
+    localStorage.removeItem(DRAFT_KEY);
+  }, []);
+
+  const updateOrderField = useCallback((field, value) => {
+    setCurrentOrder((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }, []);
+
+  const toggleTaxes = useCallback(() => {
+    const nextTaxState = !applyTaxes;
+    setApplyTaxes(nextTaxState);
+    setCurrentOrder((previousOrder) =>
+      recalculateOrder(
+        previousOrder,
+        previousOrder.items,
+        nextTaxState
+      )
+    );
+  }, [applyTaxes, recalculateOrder]);
+
+  const saveOrder = useCallback(async () => {
+    if (saving) return { success: false, error: 'Save already in progress' };
+    if (currentOrder.items.length === 0) {
+      setError('Select at least one menu item before saving.');
+      return { success: false, error: 'No items in order' };
+    }
+    if (!isOnline) {
+      setError('You are offline. Reconnect to save this order.');
+      return { success: false, error: 'Offline' };
+    }
+
+    setSaving(true);
+    setError(null);
+    const normalized = normalizeOrder({
+      ...currentOrder,
+      applyTaxes,
+      status: currentOrder.status || 'new',
+      completed: currentOrder.status === 'delivered',
+    });
+    const orderPayload = {
+      customerName: normalized.customerName,
+      notes: normalized.notes,
+      paymentMethod: normalized.paymentMethod,
+      status: normalized.status,
+      items: normalized.items,
+      applyTaxes: Boolean(applyTaxes),
+      completed: normalized.status === 'delivered',
+      total: Number(normalized.total),
+      tps: Number(normalized.tps),
+      tvq: Number(normalized.tvq),
+      totalWithTax: Number(normalized.totalWithTax),
+    };
+
+    const result = currentOrder.originalId
+      ? await fbUpdateOrder(
+          currentOrder.originalId,
+          orderPayload,
+          'order-edited'
+        )
+      : await fbAddOrder(orderPayload);
+
+    setSaving(false);
+    if (!result.success && result.error) {
+      setError(`Order could not be saved: ${result.error}`);
       return result;
     }
-    
-    // Otherwise just load the order for editing
-    const success = loadOrderForEditing(orderId);
-    return { success };  // Return an object with success property
-  };
 
-  // Allow the user to check when an item has been delivered
-const updateItemDeliveryStatus = async (orderId, itemIndex, isDelivered) => {
-  setError(null);
-  
-  try {
-    // Find the order to update
-    const orderToUpdate = orders.find(order => order.id === orderId);
-    
-    if (!orderToUpdate) {
-      return { success: false, error: 'Order not found' };
-    }
-    
-    // Create a copy of the items array
-    const updatedItems = [...orderToUpdate.items];
-    
-    // Update the delivery status of the specific item
-    updatedItems[itemIndex] = {
-      ...updatedItems[itemIndex],
-      delivered: isDelivered
-    };
-    
-    // Check if all items are delivered
-    const allItemsDelivered = updatedItems.every(item => item.delivered === true);
-    
-    // Update the order with the new items array and completed status
-    const updatedOrder = {
-      ...orderToUpdate,
-      items: updatedItems,
-      completed: allItemsDelivered,
-      completedAt: allItemsDelivered ? new Date().toISOString() : null
-    };
-    
-    // Update in Firestore
-    const result = await fbUpdateOrder(orderId, updatedOrder);
-    
-    if (result.error) {
-      setError(result.error);
-      return { success: false, error: result.error };
-    }
-    
-    return { success: true };
-  } catch (err) {
-    const errorMsg = err.message || 'Failed to update delivery status';
-    setError(errorMsg);
-    return { success: false, error: errorMsg };
-  }
-};
+    const orderLabel = result.orderNumber
+      ? `Order #${result.orderNumber}`
+      : 'Order';
+    setNotice(`${orderLabel} saved successfully.`);
+    clearOrder();
+    return { success: true, ...result };
+  }, [applyTaxes, clearOrder, currentOrder, isOnline, saving]);
 
-  const value = {
-    orders,
-    currentOrder,
-    loading,
-    error,
-    addItem,
-    removeItem,
-    clearOrder,
-    updateCustomerName,
-    completeOrder,
-    deleteOrder: deleteOrderFromFirestore,
-    editOrder,
-    loadOrderForEditing,
-    filterOrders,
-    dateFilter,
-    updateDateFilter,
-    orderSummary,
-    applyTaxes,
-    toggleTaxes,
-    updateItemDeliveryStatus
-  };
+  const editOrder = useCallback(
+    (orderId) => {
+      const order = orders.find((candidate) => candidate.id === orderId);
+      if (!order) return { success: false, error: 'Order not found' };
+      const normalized = normalizeOrder(order);
+      setApplyTaxes(Boolean(order.applyTaxes));
+      setCurrentOrder({
+        ...normalized,
+        originalId: order.id,
+      });
+      setNotice(`Order #${order.orderNumber || order.id} is ready to edit.`);
+      return { success: true };
+    },
+    [orders]
+  );
+
+  const deleteOrder = useCallback(async (orderId) => {
+    const result = await fbSoftDeleteOrder(orderId);
+    if (result.error) setError(`Order could not be deleted: ${result.error}`);
+    else setNotice('Order moved to Recently Deleted.');
+    return result;
+  }, []);
+
+  const restoreOrder = useCallback(async (orderId) => {
+    const result = await fbRestoreOrder(orderId);
+    if (result.error) setError(`Order could not be restored: ${result.error}`);
+    else setNotice('Order restored.');
+    return result;
+  }, []);
+
+  const updateOrderStatus = useCallback(
+    async (orderId, status) => {
+      const order = orders.find((candidate) => candidate.id === orderId);
+      if (!order) return { success: false, error: 'Order not found' };
+      const delivered = status === 'delivered';
+      const items = delivered
+        ? order.items.map((item) => ({ ...item, delivered: true }))
+        : order.items;
+      const result = await fbUpdateOrder(
+        orderId,
+        {
+          status,
+          completed: delivered,
+          completedAt: delivered ? new Date().toISOString() : null,
+          items,
+        },
+        'status-changed'
+      );
+      if (result.error) setError(`Status could not be changed: ${result.error}`);
+      return result;
+    },
+    [orders]
+  );
+
+  const updateItemDeliveryStatus = useCallback(
+    async (orderId, itemIndex, isDelivered) => {
+      const order = orders.find((candidate) => candidate.id === orderId);
+      if (!order) return { success: false, error: 'Order not found' };
+      const items = order.items.map((item, index) =>
+        index === itemIndex ? { ...item, delivered: isDelivered } : item
+      );
+      const allDelivered = items.every((item) => item.delivered);
+      return fbUpdateOrder(
+        orderId,
+        {
+          items,
+          status: allDelivered ? 'delivered' : order.status,
+          completed: allDelivered,
+          completedAt: allDelivered ? new Date().toISOString() : null,
+        },
+        'item-delivery-changed'
+      );
+    },
+    [orders]
+  );
+
+  const updateMenuItem = useCallback(async (item) => {
+    const result = await fbSaveMenuItem(item);
+    if (result.error) setError(`Menu item could not be saved: ${result.error}`);
+    else setNotice(`${item.name} updated.`);
+    return result;
+  }, []);
+
+  const filterOrders = useCallback(
+    (filterTerm) => {
+      const term = filterTerm.trim().toLowerCase();
+      if (!term) return orders;
+      return orders.filter(
+        (order) =>
+          String(order.orderNumber || order.id)
+            .toLowerCase()
+            .includes(term) ||
+          order.customerName?.toLowerCase().includes(term) ||
+          order.items?.some((item) =>
+            item.name?.toLowerCase().includes(term)
+          )
+      );
+    },
+    [orders]
+  );
+
+  const value = useMemo(
+    () => ({
+      orders,
+      deletedOrders,
+      currentOrder,
+      menuItems,
+      loading,
+      menuLoading,
+      saving,
+      error,
+      notice,
+      isOnline,
+      usingCachedData,
+      applyTaxes,
+      dateFilter,
+      orderSummary,
+      addItem,
+      removeItem,
+      clearOrder,
+      updateCustomerName: (value) => updateOrderField('customerName', value),
+      updateNotes: (value) => updateOrderField('notes', value),
+      updatePaymentMethod: (value) =>
+        updateOrderField('paymentMethod', value),
+      toggleTaxes,
+      completeOrder: saveOrder,
+      saveOrder,
+      editOrder,
+      deleteOrder,
+      restoreOrder,
+      updateOrderStatus,
+      updateItemDeliveryStatus,
+      updateMenuItem,
+      filterOrders,
+      updateDateFilter: (startDate, endDate) =>
+        setDateFilter({ startDate, endDate }),
+      dismissError: () => setError(null),
+      dismissNotice: () => setNotice(null),
+    }),
+    [
+      addItem,
+      applyTaxes,
+      clearOrder,
+      currentOrder,
+      dateFilter,
+      deleteOrder,
+      deletedOrders,
+      editOrder,
+      error,
+      filterOrders,
+      isOnline,
+      loading,
+      menuItems,
+      menuLoading,
+      notice,
+      orderSummary,
+      orders,
+      removeItem,
+      restoreOrder,
+      saveOrder,
+      saving,
+      toggleTaxes,
+      updateItemDeliveryStatus,
+      updateMenuItem,
+      updateOrderField,
+      updateOrderStatus,
+      usingCachedData,
+    ]
+  );
 
   return (
     <OrdersContext.Provider value={value}>

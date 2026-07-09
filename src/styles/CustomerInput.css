@@ -1,17 +1,87 @@
-.customer-input {
-  margin-bottom: 20px;
+.customer-fields {
+  display: grid;
+  gap: 16px;
+  padding-block: 20px;
+  border-block: 1px solid var(--line);
 }
 
-.customer-input label {
+.field label,
+.payment-field legend {
   display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.customer-input input {
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-label-row span {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.field input,
+.field textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
+  padding: 11px 12px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.field textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.payment-field {
+  padding: 0;
+  border: 0;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.segmented-control label {
+  position: relative;
+  cursor: pointer;
+}
+
+.segmented-control input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmented-control span {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  padding: 8px;
+  color: var(--brand-dark);
+  background: transparent;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.segmented-control label.is-selected span {
+  color: #fffaf4;
+  background: var(--brand);
+}
+
+.segmented-control input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }

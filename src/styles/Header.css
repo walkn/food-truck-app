@@ -1,23 +1,124 @@
 .header {
+  position: relative;
+  z-index: 10;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 83px;
+  padding: 14px max(20px, calc((100vw - 1440px) / 2));
+  color: #fffaf4;
+  background: var(--brand);
+  border-bottom: 5px solid var(--accent);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  color: var(--brand);
+  background: #fffaf4;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.8vw, 2.25rem);
+  font-stretch: condensed;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #ffdcd4;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.connection-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.connection-state > span {
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  border: 2px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+}
+
+.connection-state.is-online {
+  color: #d8ffd9;
+}
+
+.connection-state.is-offline {
+  color: #ffe08a;
 }
 
 .history-toggle-btn {
-  background-color: #4a90e2;
-  color: white;
+  min-height: 48px;
+  padding: 10px 18px;
+  color: #fffaf4;
+  background: transparent;
+  border: 2px solid #fffaf4;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-@media (min-width: 768px) {
+.history-toggle-btn:hover {
+  color: var(--brand);
+  background: #fffaf4;
+}
+
+@media (max-width: 640px) {
+  .header {
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+
+  .brand-mark,
+  .header p,
+  .connection-state {
+    display: none;
+  }
+
   .header h1 {
-    font-size: 2rem;
+    max-width: 170px;
+    line-height: 0.98;
+  }
+
+  .history-toggle-btn {
+    padding-inline: 12px;
+    font-size: 0.74rem;
   }
 }

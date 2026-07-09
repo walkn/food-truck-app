@@ -1,7 +1,14 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getAnalytics } from "firebase/analytics";
+import {
+  initializeAppCheck,
+  ReCaptchaV3Provider,
+} from 'firebase/app-check';
 
 // Your web app's Firebase configuration
 // Replace these placeholder values with your actual Firebase project config
@@ -17,8 +24,25 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 const auth = getAuth(app);
-const analytics = getAnalytics(app);
+
+const appCheckSiteKey = process.env.REACT_APP_FIREBASE_APP_CHECK_SITE_KEY;
+
+if (appCheckSiteKey && typeof window !== 'undefined') {
+  if (process.env.NODE_ENV === 'development') {
+    window.FIREBASE_APPCHECK_DEBUG_TOKEN =
+      process.env.REACT_APP_FIREBASE_APPCHECK_DEBUG_TOKEN || true;
+  }
+
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 export { db, auth };
