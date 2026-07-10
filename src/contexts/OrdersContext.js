@@ -11,6 +11,7 @@ import {
   anonymizeExpiredCustomers,
   restoreOrder as fbRestoreOrder,
   saveMenuItem as fbSaveMenuItem,
+  softDeleteOrders as fbSoftDeleteOrders,
   softDeleteOrder as fbSoftDeleteOrder,
   subscribeToMenu,
   subscribeToOrders,
@@ -70,6 +71,8 @@ export const OrdersProvider = ({ children }) => {
   const [dateFilter, setDateFilter] = useState({
     startDate: null,
     endDate: null,
+    year: 'all',
+    month: 'all',
   });
 
   const orders = useMemo(
@@ -90,7 +93,9 @@ export const OrdersProvider = ({ children }) => {
       calculateDailySummary(
         reportableOrders,
         dateFilter.startDate,
-        dateFilter.endDate
+        dateFilter.endDate,
+        dateFilter.year,
+        dateFilter.month
       ),
     [reportableOrders, dateFilter]
   );
@@ -325,6 +330,22 @@ export const OrdersProvider = ({ children }) => {
     return result;
   }, []);
 
+  const deleteAllOrders = useCallback(async () => {
+    if (!isOnline) {
+      setError('You are offline. Reconnect to delete orders.');
+      return { success: false, count: 0, error: 'Offline' };
+    }
+
+    const result = await fbSoftDeleteOrders(orders.map((order) => order.id));
+    if (result.error) {
+      setError(`Orders could not be deleted: ${result.error}`);
+    } else if (result.count > 0) {
+      setNotice(`${result.count} orders moved to Recently Deleted.`);
+      clearOrder();
+    }
+    return result;
+  }, [clearOrder, isOnline, orders]);
+
   const restoreOrder = useCallback(async (orderId) => {
     const result = await fbRestoreOrder(orderId);
     if (result.error) setError(`Order could not be restored: ${result.error}`);
@@ -431,13 +452,26 @@ export const OrdersProvider = ({ children }) => {
       saveOrder,
       editOrder,
       deleteOrder,
+      deleteAllOrders,
       restoreOrder,
       updateOrderStatus,
       updateItemDeliveryStatus,
       updateMenuItem,
       filterOrders,
       updateDateFilter: (startDate, endDate) =>
-        setDateFilter({ startDate, endDate }),
+        setDateFilter({
+          startDate,
+          endDate,
+          year: 'all',
+          month: 'all',
+        }),
+      updateYearMonthFilter: (year, month) =>
+        setDateFilter({
+          startDate: null,
+          endDate: null,
+          year,
+          month,
+        }),
       dismissError: () => setError(null),
       dismissNotice: () => setNotice(null),
     }),
@@ -448,6 +482,7 @@ export const OrdersProvider = ({ children }) => {
       currentOrder,
       dateFilter,
       deleteOrder,
+      deleteAllOrders,
       deletedOrders,
       editOrder,
       error,

@@ -100,6 +100,35 @@ export const softDeleteOrder = (orderId) =>
     'deleted'
   );
 
+export const softDeleteOrders = async (orderIds = []) => {
+  const ids = [...new Set(orderIds)].filter(Boolean);
+  if (ids.length === 0) return { success: true, count: 0, error: null };
+
+  try {
+    const deviceId = getDeviceId();
+    for (let start = 0; start < ids.length; start += 500) {
+      const batch = writeBatch(db);
+      ids.slice(start, start + 500).forEach((orderId) => {
+        batch.update(doc(db, ORDERS_COLLECTION, orderId), {
+          deletedAt: serverTimestamp(),
+          deletedBy: deviceId,
+          updatedAt: serverTimestamp(),
+          deviceId,
+        });
+      });
+      await batch.commit();
+    }
+
+    recordEvent('bulk', 'bulk-deleted', { count: ids.length }).catch(
+      console.error
+    );
+    return { success: true, count: ids.length, error: null };
+  } catch (error) {
+    console.error('Error deleting orders:', error);
+    return { success: false, count: 0, error: error.message };
+  }
+};
+
 export const restoreOrder = (orderId) =>
   updateOrder(
     orderId,

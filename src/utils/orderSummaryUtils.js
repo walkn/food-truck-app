@@ -14,12 +14,22 @@ const parseOrderDate = (order) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-export const calculateDailySummary = (orders, startDate, endDate) => {
+export const calculateDailySummary = (
+  orders,
+  startDate,
+  endDate,
+  year,
+  month
+) => {
   const days = new Map();
+  const selectedYear = year && year !== 'all' ? Number(year) : null;
+  const selectedMonth = month && month !== 'all' ? Number(month) : null;
 
   for (const order of orders || []) {
     const orderDate = parseOrderDate(order);
     if (!orderDate) continue;
+    if (selectedYear && orderDate.getFullYear() !== selectedYear) continue;
+    if (selectedMonth && orderDate.getMonth() + 1 !== selectedMonth) continue;
     const isoDate = toLocalIsoDate(orderDate);
     if (startDate && isoDate < startDate) continue;
     if (endDate && isoDate > endDate) continue;

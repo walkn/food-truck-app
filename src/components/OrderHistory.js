@@ -15,8 +15,10 @@ const STATUS_OPTIONS = [
 function OrderHistory({ onEdit }) {
   const {
     filterOrders,
+    orders,
     deletedOrders,
     deleteOrder,
+    deleteAllOrders,
     restoreOrder,
     editOrder,
     updateOrderStatus,
@@ -26,6 +28,8 @@ function OrderHistory({ onEdit }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [printOrderId, setPrintOrderId] = useState(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -62,6 +66,14 @@ function OrderHistory({ onEdit }) {
     if (result.success) onEdit?.();
   };
 
+  const handleDeleteAll = async () => {
+    if (deletingAll) return;
+    setDeletingAll(true);
+    const result = await deleteAllOrders();
+    setDeletingAll(false);
+    if (result.success) setConfirmDeleteAll(false);
+  };
+
   if (loading) {
     return (
       <section className="order-history">
@@ -78,7 +90,26 @@ function OrderHistory({ onEdit }) {
           <h2 id="history-title">Order History</h2>
           <p>Track preparation, delivery, and completed sales.</p>
         </div>
+        <button
+          className="button button--danger-quiet no-print"
+          onClick={() => setConfirmDeleteAll(true)}
+          disabled={orders.length === 0 || deletingAll}
+        >
+          Delete all orders
+        </button>
       </div>
+
+      {confirmDeleteAll ? (
+        <div className="bulk-delete-confirm no-print">
+          <ConfirmDialog
+            title="Delete all active orders?"
+            message={`This will move ${orders.length} active orders to Recently Deleted. You can restore them later.`}
+            confirmLabel={deletingAll ? 'Deleting…' : 'Delete all'}
+            onCancel={() => setConfirmDeleteAll(false)}
+            onConfirm={handleDeleteAll}
+          />
+        </div>
+      ) : null}
 
       <div className="history-toolbar">
         <label className="search-field">

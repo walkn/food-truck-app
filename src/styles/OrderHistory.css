@@ -2,6 +2,13 @@
   margin-top: 28px;
 }
 
+.history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
 .history-heading h2 {
   margin-bottom: 2px;
   font-family: var(--font-display);
@@ -13,6 +20,10 @@
 
 .history-heading p {
   color: var(--ink-soft);
+}
+
+.bulk-delete-confirm {
+  margin-top: 18px;
 }
 
 .history-toolbar {
@@ -275,6 +286,11 @@
 }
 
 @media (max-width: 650px) {
+  .history-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .history-toolbar {
     grid-template-columns: 1fr;
   }

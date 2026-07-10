@@ -4,17 +4,45 @@ import { downloadOrdersCsv } from '../utils/exportUtils';
 import { formatCurrency, getDateRanges } from '../utils/orderSummaryUtils';
 import '../styles/OrderSummaryReport.css';
 
+const MONTH_OPTIONS = [
+  ['1', 'January'],
+  ['2', 'February'],
+  ['3', 'March'],
+  ['4', 'April'],
+  ['5', 'May'],
+  ['6', 'June'],
+  ['7', 'July'],
+  ['8', 'August'],
+  ['9', 'September'],
+  ['10', 'October'],
+  ['11', 'November'],
+  ['12', 'December'],
+];
+
 function OrderSummaryReport() {
   const {
     orderSummary,
     dateFilter,
     updateDateFilter,
+    updateYearMonthFilter,
     orders,
   } = useOrders();
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('daily');
   const [customRange, setCustomRange] = useState({ start: '', end: '' });
   const dateRanges = useMemo(getDateRanges, []);
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    orders.forEach((order) => {
+      const orderDate = new Date(order.timestamp);
+      if (!Number.isNaN(orderDate.getTime())) {
+        years.add(String(orderDate.getFullYear()));
+      }
+    });
+    const currentYear = String(new Date().getFullYear());
+    years.add(currentYear);
+    return [...years].sort((a, b) => Number(b) - Number(a));
+  }, [orders]);
   const totalItems = orderSummary.overallSummary.itemsSold.reduce(
     (sum, item) => sum + item.quantity,
     0
@@ -79,7 +107,9 @@ function OrderSummaryReport() {
               {Object.entries(dateRanges).map(([key, range]) => {
                 const active =
                   dateFilter.startDate === range.start &&
-                  dateFilter.endDate === range.end;
+                  dateFilter.endDate === range.end &&
+                  (dateFilter.year || 'all') === 'all' &&
+                  (dateFilter.month || 'all') === 'all';
                 return (
                   <button
                     key={key}
@@ -91,6 +121,43 @@ function OrderSummaryReport() {
                   </button>
                 );
               })}
+            </div>
+
+            <div className="period-filter">
+              <label>
+                <span>Year</span>
+                <select
+                  value={dateFilter.year || 'all'}
+                  onChange={(event) =>
+                    updateYearMonthFilter(
+                      event.target.value,
+                      dateFilter.month || 'all'
+                    )
+                  }
+                >
+                  <option value="all">All years</option>
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Month</span>
+                <select
+                  value={dateFilter.month || 'all'}
+                  onChange={(event) =>
+                    updateYearMonthFilter(
+                      dateFilter.year || 'all',
+                      event.target.value
+                    )
+                  }
+                >
+                  <option value="all">All months</option>
+                  {MONTH_OPTIONS.map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div className="custom-range">
