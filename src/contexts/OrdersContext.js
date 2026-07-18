@@ -31,6 +31,7 @@ const EMPTY_ORDER = {
   customerName: '',
   notes: '',
   paymentMethod: 'cash',
+  applyTaxes: true,
   total: 0,
   tps: 0,
   tvq: 0,
@@ -229,7 +230,7 @@ export const OrdersProvider = ({ children }) => {
 
   const clearOrder = useCallback(() => {
     setCurrentOrder(EMPTY_ORDER);
-    setApplyTaxes(false);
+    setApplyTaxes(true);
     localStorage.removeItem(DRAFT_KEY);
   }, []);
 
